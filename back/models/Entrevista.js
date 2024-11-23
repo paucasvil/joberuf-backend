@@ -1,12 +1,17 @@
 const mongoose = require('mongoose');
 
 const entrevistaSchema = new mongoose.Schema({
-  fechaSimulacion: { type: Date, default: Date.now },
-  feedback: { type: String },
-  pregunta: { type: String, required: true },
-  resultado: { type: String },
-  usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+  usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  respuestas: [
+    {
+      pregunta: { type: String, required: true },
+      respuesta: { type: String, required: true },
+    },
+  ],
+  resultado: {
+    puntuación: { type: Number },
+    sugerencias: { type: String },
+  },
 });
 
-const Entrevista = mongoose.model('Entrevista', entrevistaSchema);
-module.exports = Entrevista;
+module.exports = mongoose.model('Entrevista', entrevistaSchema);

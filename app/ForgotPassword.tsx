@@ -3,14 +3,15 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-
+import { IPADDRESS } from './config';
+console.log(`FP = ${IPADDRESS}`);
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { email } = useLocalSearchParams();
 
   const handleSendEmail = async () => {
     try {
-      const response = await axios.post('http://192.168.1.12:3000/api/auth/forgotPassword', { email });
+      const response = await axios.post(`http://${IPADDRESS}:3000/api/auth/forgotPassword`, { email });
       Alert.alert('Correo Enviado', `Se ha enviado una contraseña temporal a ${email}.`);
       router.push('/Login');
     } catch (error) {

@@ -1,126 +1,229 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import * as Network from 'expo-network';
+
+import { IPADDRESS } from './config';
+console.log(`CHAT = ${IPADDRESS}`);
+
+type Message = {
+  id: number;
+  sender: string;
+  text: string;
+  type: 'sent' | 'received';
+};
 
 export default function ChatScreen() {
-  const fotoPerfil = require('../components/img/FotoPerfil.jpg');
-  const imagoBW = require('../components/img/ImagoBW.png');
-  const messageIcon = require('../components/img/Message_v2.png');
-  const dots = require('../components/img/Dots.png');
-
-  const [messages, setMessages] = useState([
-    { id: 1, sender: 'Joby', text: '¿Listo para iniciar la simulación de entrevista?', type: 'received' },
-    { id: 2, sender: 'Pablo', text: 'Acceso a simulación de entrevista', type: 'sent' },
-  ]);
-
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [ipAddress, setIpAddress] = useState('');
-  const scrollViewRef = useRef<ScrollView>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [userSector, setUserSector] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [interviewQuestions, setInterviewQuestions] = useState<{ topic: string; question: string }[]>([]);
+  const scrollViewRef = useRef<ScrollView | null>(null);
 
-  // Obtener IP local en tiempo de ejecución
+  const MAX_QUESTIONS = 10;
+
   useEffect(() => {
-    const fetchIpAddress = async () => {
-      const ip = await Network.getIpAddressAsync();
-      setIpAddress(ip);
-      console.log('IP Address:', ip);
+    const fetchUserData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        console.log('Token obtenido:', token);
+
+        if (!token) {
+          Alert.alert('Error', 'Usuario no autenticado.');
+          return;
+        }
+
+        const response = await axios.get(`http://${IPADDRESS}:3000/api/auth/getProfile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const { id, sector } = response.data.user;
+        console.log('Sector:', sector, 'User ID:', id);
+
+        setUserSector(sector);
+        setUserId(id);
+
+        startInterview(sector, id);
+      } catch (error:any) {
+        console.error('Error al obtener los datos del usuario:', error.response?.data || error.message);
+        Alert.alert('Error', 'No se pudo obtener la información del usuario.');
+      }
     };
-    fetchIpAddress();
+
+    fetchUserData();
   }, []);
 
-  // Función para enviar el mensaje al backend y obtener respuesta
-  const sendMessage = async () => {
-    if (inputText.trim() === '') return;
-
-    // Añadir mensaje del usuario
-    const newMessage = { id: Date.now(), sender: 'Pablo', text: inputText, type: 'sent' };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
-    setInputText('');
+  const startInterview = async (sector: string, id: string) => {
+    setLoading(true);
+    const token = await AsyncStorage.getItem('token');
+    console.log(`Token en startInterview: ${token}`);
+    console.log(`Sector : ${sector} y id : ${id}`);
+    if (!token) {
+      Alert.alert('Error', 'Usuario no autenticado.');
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Llamada al backend para simular la entrevista
-      const response = await axios.post(`http:// 192.168.1.12:3000/api/chat`, {
-        pregunta: inputText,
-      });
+      const response = await axios.post(
+        `http://${IPADDRESS}:3000/api/auth/startInterview`,
+        { userSector: sector, userId: id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      const botMessage = {
-        id: Date.now() + 1,
+      const questions = response.data.questions;
+      console.log('Preguntas recibidas:', questions);
+      setInterviewQuestions(questions);
+
+      const firstQuestion: Message = {
+        id: Date.now(),
         sender: 'Joby',
-        text: response.data.respuesta,
+        text: `¡Hola! Soy Joby, tu  entrevistador. Comencemos con esta entrevista. ${questions[0].question}`,
         type: 'received',
       };
 
-      setMessages((prevMessages) => [...prevMessages, botMessage]);
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    } catch (error) {
-      console.error('Error al obtener respuesta del backend:', error);
-      const errorMessage = {
-        id: Date.now() + 1,
-        sender: 'Joby',
-        text: 'Error al procesar la solicitud. Inténtalo de nuevo.',
-        type: 'received',
-      };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      setMessages([firstQuestion]);
+    } catch (error:any) {
+      console.error('Error al iniciar la entrevista:', error.response?.data || error.message);
+      Alert.alert('Error', 'No se pudo iniciar la entrevista.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const sendMessage = async () => {
+    if (!inputText.trim()) return;
+  
+    const userMessage: Message = {
+      id: Date.now(),
+      sender: 'Usuario',
+      text: inputText,
+      type: 'sent',
+    };
+  
+    setMessages((prev) => [...prev, userMessage]);
+    setInputText('');
+    setLoading(true);
+  
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Usuario no autenticado.');
+        return;
+      }
+  
+      const response = await axios.post(
+        `http://${IPADDRESS}:3000/api/auth/nextQuestion`,
+        {
+          userResponse: inputText,
+          currentQuestionIndex,
+          userId,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+  
+      const nextQuestionObject = interviewQuestions[currentQuestionIndex + 1]; 
+      const nextQuestionText = nextQuestionObject?.question; 
+  
+      if (currentQuestionIndex + 1 < MAX_QUESTIONS && nextQuestionText) {
+        const botMessage: Message = {
+          id: Date.now(),
+          sender: 'Joby',
+          text: nextQuestionText, 
+          type: 'received',
+        };
+        setMessages((prev) => [...prev, botMessage]);
+        setCurrentQuestionIndex((prev) => prev + 1);
+      } else {
+        finishInterview();
+      }
+    } catch (error) {
+      console.error('Error al enviar la respuesta:', error);
+      Alert.alert('Error', 'No se pudo enviar la respuesta.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const finishInterview = async () => {
+    setLoading(true);
+  
+    const userResponses = messages
+      .filter((msg) => msg.type === 'sent')
+      .map((msg, index) => ({
+        question: interviewQuestions[index],
+        answer: msg.text,
+      }));
+  
+    try {
+      const response = await axios.post(`http://${IPADDRESS}:3000/api/auth/finishInterview`, {
+        userId,
+        responses: userResponses,
+        userSector,
+      });
+  
+      const { feedback, score } = response.data;
+  
+      const resultMessage: Message = {
+        id: Date.now(),
+        sender: 'Joby',
+        text: `Entrevista finalizada. Puntuación: ${score}/100.\n\nFeedback:\n${feedback}`,
+        type: 'received',
+      };
+  
+      setMessages((prev) => [...prev, resultMessage]);
+    } catch (error) {
+      console.error('Error al finalizar la entrevista:', error);
+      Alert.alert('Error', 'No se pudo finalizar la entrevista.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
   return (
     <View style={styles.container}>
-
-      {/* Iconos superiores flotantes */}
-      <View style={styles.topIconContainer}>
-        <Image source={dots} style={styles.icon} />
-        <Image source={messageIcon} style={styles.icon} />
-      </View>
-
-      {/* Área de mensajes */}
       <ScrollView
-        style={styles.messageContainer}
-        contentContainerStyle={styles.messageContentContainer}
         ref={scrollViewRef}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        style={styles.messageContainer}
       >
-        {messages.map((message) => (
+        {messages.map((msg) => (
           <View
-            key={message.id}
-            style={[
-              styles.messageRow,
-              message.type === 'sent' ? styles.sentMessageRow : styles.receivedMessageRow,
-            ]}
+            key={msg.id}
+            style={[styles.messageRow, msg.type === 'sent' ? styles.sentMessageRow : styles.receivedMessageRow]}
           >
-            {message.type === 'received' && <Image source={imagoBW} style={styles.profileImage} />}
             <View
-              style={[
-                styles.messageContent,
-                message.type === 'sent' ? styles.sentMessageContent : styles.receivedMessageContent,
-              ]}
+              style={[styles.messageContent, msg.type === 'sent' ? styles.sentMessageContent : styles.receivedMessageContent]}
             >
-              <Text style={styles.senderName}>
-                {message.sender}{' '}
-                <Text style={styles.jobLabel}>
-                  {message.sender === 'Pablo' ? 'Recién egresado' : 'Joberuf'}
-                </Text>
-              </Text>
-              <Text style={styles.messageText}>{message.text}</Text>
+              <Text style={styles.messageText}>{msg.text}</Text>
             </View>
-            {message.type === 'sent' && <Image source={fotoPerfil} style={styles.profileImage} />}
           </View>
         ))}
       </ScrollView>
 
-      {/* Input para nuevo mensaje */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Escribe un nuevo mensaje"
-          style={styles.input}
-          value={inputText}
-          onChangeText={setInputText}
-        />
-        <TouchableOpacity onPress={sendMessage}>
-          <FontAwesome name="paper-plane" size={16} color="#030303" />
-        </TouchableOpacity>
-      </View>
+      {loading && <ActivityIndicator size="large" color="#39e991" style={styles.loading} />}
+
+      {currentQuestionIndex < MAX_QUESTIONS && (
+        <View style={styles.inputContainer}>
+          <TextInput
+            placeholder="Escribe tu respuesta..."
+            style={styles.input}
+            value={inputText}
+            onChangeText={setInputText}
+            editable={!loading}
+          />
+          <TouchableOpacity onPress={sendMessage} disabled={loading}>
+            <FontAwesome name="paper-plane" size={20} color="#39e991" />
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -128,28 +231,15 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     width: '100%',
     backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    width: 24,
-    height: 24,
-  },
-  topIconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
   },
   messageContainer: {
     flex: 1,
     width: '100%',
     marginBottom: 10,
-  },
-  messageContentContainer: {
-    justifyContent: 'flex-start',
-    paddingHorizontal: 10,
   },
   messageRow: {
     flexDirection: 'row',
@@ -157,17 +247,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
-  receivedMessageRow: {
-    justifyContent: 'flex-start',
-  },
   sentMessageRow: {
     justifyContent: 'flex-end',
   },
-  profileImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 100,
-    marginRight: 10,
+  receivedMessageRow: {
+    justifyContent: 'flex-start',
   },
   messageContent: {
     maxWidth: '80%',
@@ -182,14 +266,6 @@ const styles = StyleSheet.create({
   receivedMessageContent: {
     backgroundColor: '#f2f2f2',
     marginRight: 10,
-  },
-  senderName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  jobLabel: {
-    fontSize: 12,
-    color: '#727272',
   },
   messageText: {
     fontSize: 16,
@@ -212,5 +288,8 @@ const styles = StyleSheet.create({
     color: '#141414',
     paddingHorizontal: 15,
     marginRight: 10,
+  },
+  loading: {
+    marginBottom: 10,
   },
 });

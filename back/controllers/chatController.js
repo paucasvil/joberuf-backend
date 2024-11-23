@@ -1,45 +1,83 @@
-// back/controllers/chatController.js
-const axios = require('axios');  // Importa Axios
-require('dotenv').config();
+/*const fs = require('fs');
+const path = require('path');
+const OpenAI = require('openai');
 
-let conversationHistory = [
-  {
-    role: 'system',
-    content: `Simula que este chat es una entrevista para un recién egresado en el campo de Ing en sistemas. 
-    Solo debes hacer una pregunta por vez. Espera siempre la respuesta del usuario antes de continuar. 
-    No generes respuestas múltiples ni adelantes preguntas futuras. Si ya hiciste una pregunta, espera una respuesta antes de hacer la siguiente.`
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const questionsData = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../data/questions.json'), 'utf-8'));
+
+function getRandomQuestions(sector) {
+  const generalQuestions = questionsData[sector]["General"];
+  const otherTopics = Object.entries(questionsData[sector]).filter(([topic]) => topic !== "General");
+  
+  const randomQuestions = otherTopics.map(([topic, questions]) => {
+    const index = Math.floor(Math.random() * questions.length);
+    return { topic, question: questions[index] };
+  });
+
+  return [
+    ...generalQuestions.slice(0, 3).map(question => ({ topic: "General", question })),
+    ...randomQuestions.slice(0, 7)
+  ];
+}
+
+let activeSessions = {};
+
+const nextQuestion = (req, res) => {
+  const { userId, currentQuestionIndex, userSector } = req.body;
+
+  if (!userId || !userSector) {
+    return res.status(400).json({ message: 'Datos incompletos en la solicitud.' });
   }
-];
 
-exports.simularEntrevista = async (req, res) => {
-  const { pregunta } = req.body;
+  if (!activeSessions[userId]) {
+    activeSessions[userId] = {
+      questions: getRandomQuestions(userSector),
+      responses: [],
+    };
+  }
+
+  const session = activeSessions[userId];
+  const question = session.questions[currentQuestionIndex];
+
+  if (!question) {
+    return res.status(200).json({ nextQuestion: null });
+  }
+
+  res.status(200).json({ nextQuestion: question.question });
+};
+
+const finishInterview = async (req, res) => {
+  const { userId } = req.body;
+
+  const session = activeSessions[userId];
+  if (!session) return res.status(400).json({ message: "Sesión no encontrada." });
+
+  const messages = [
+    { role: "system", content: "Eres un entrevistador experto. Proporciona retroalimentación y puntuación." },
+    ...session.responses.map(({ question, answer }) => ({
+      role: "user",
+      content: `Pregunta: ${question}\nRespuesta: ${answer}`
+    }))
+  ];
 
   try {
-    conversationHistory.push({ role: 'user', content: pregunta });
-    const limitedHistory = conversationHistory.slice(-3);
+    const openaiResponse = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages,
+      max_tokens: 500,
+      temperature: 0.7
+    });
 
-    const openaiResponse = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4',
-        messages: limitedHistory,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 50000,
-      }
-    );
+    const feedback = openaiResponse.choices[0].message?.content?.trim() || "Sin retroalimentación.";
+    const score = Math.floor(Math.random() * 101);
 
-    const respuesta = openaiResponse.data.choices[0].message.content;
-    conversationHistory.push({ role: 'assistant', content: respuesta });
-
-    res.status(200).json({ respuesta });
-
+    delete activeSessions[userId];
+    res.status(200).json({ feedback, score });
   } catch (error) {
-    console.error('Error en OpenAI:', error.response?.data || error.message);
-    res.status(500).json({ message: 'Error en la solicitud a OpenAI' });
+    console.error("Error al finalizar la entrevista:", error);
+    res.status(500).json({ message: "Error al finalizar la entrevista." });
   }
 };
+
+module.exports = { nextQuestion, finishInterview };
+*/

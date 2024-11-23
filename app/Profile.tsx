@@ -7,17 +7,20 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
+import { IPADDRESS } from './config';
+console.log(`PROFILE = ${IPADDRESS}`);
+
 export default function UserProfileScreen() {
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
-  const [nombre, setNombre] = useState('Pablo Amaya');
-  const [correo, setCorreo] = useState('amaya.pabloivan@gmail.com');
-  const [telefono, setTelefono] = useState('871 177 0435');
+  const [nombre, setNombre] = useState('Nombre');
+  const [correo, setCorreo] = useState('Correo');
+  const [telefono, setTelefono] = useState('Telefono');
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       const token = await AsyncStorage.getItem('token');
       try {
-        const response = await axios.get('http://192.168.1.12:3000/api/auth/getProfile', {
+        const response = await axios.get(`http://${IPADDRESS}:3000/api/auth/getProfile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const user = response.data.user;
@@ -26,7 +29,7 @@ export default function UserProfileScreen() {
         setNombre(user.nombre);
         setCorreo(user.correo);
         setTelefono(user.telefono);
-        setFotoPerfil(`http://192.168.1.12:3000/${user.fotoPerfil}`);
+        setFotoPerfil(`http://${IPADDRESS}:3000/${user.fotoPerfil}`);        
       } catch (error) {
         console.error("Error al obtener el perfil del usuario:", error);
       }

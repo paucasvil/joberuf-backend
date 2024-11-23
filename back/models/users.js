@@ -4,7 +4,7 @@ const usuarioSchema = new mongoose.Schema({
     nombre: {
         type: String,
         required: true,
-        trim: true,  // Elimina espacios en blanco al inicio y final
+        trim: true,
     },
     apellidos: {
         type: String,
@@ -23,9 +23,9 @@ const usuarioSchema = new mongoose.Schema({
     correo: {
         type: String,
         required: true,
-        unique: true,  // Asegura que el correo sea único
+        unique: true,
         trim: true,
-        match: /.+\@.+\..+/  // Valida el formato de correo
+        match: /.+\@.+\..+/
     },
     sector: {
         type: String,
@@ -37,8 +37,8 @@ const usuarioSchema = new mongoose.Schema({
     },
     rol: {
         type: String,
-        default: 'usuario',  // Valor por defecto, puede ser 'admin' o 'usuario'
-        enum: ['usuario', 'admin'], // Limita los valores posibles
+        default: 'usuario',
+        enum: ['usuario', 'admin'],
     },
     fotoPerfil: { 
         type: String, 
@@ -46,7 +46,7 @@ const usuarioSchema = new mongoose.Schema({
     },
     fechaRegistro: {
         type: Date,
-        default: Date.now,  // Establece la fecha de registro al momento actual
+        default: Date.now,
     },
     ultimoAcceso: {
         type: Date,
@@ -56,6 +56,18 @@ const usuarioSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    habilidadesTecnicas: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Habilidad',
+    }],
+    habilidadesBlandas: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Habilidad',
+    }],
+    habilidadesPersonalizadas: [{
+        type: String,
+        trim: true,
+    }],
 });
 
 module.exports = mongoose.model('users', usuarioSchema);

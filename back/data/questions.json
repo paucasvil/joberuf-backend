@@ -1,0 +1,93 @@
+{
+    "Ciencias de la Computación": {
+      "General": [
+        "¿En qué lenguajes sueles programar?",
+        "Cuéntanos de algún proyecto en el que hayas trabajado.",
+        "¿Cómo abordas la resolución de problemas técnicos complejos?",
+        "¿Qué tecnologías utilizaste en tu último proyecto?",
+        "Describe tu flujo de trabajo típico al desarrollar software.",
+        "¿Cómo colaboras con otros desarrolladores en proyectos grandes?",
+        "¿Qué herramientas de control de versiones has usado?",
+        "¿Qué desafíos has enfrentado en el desarrollo de software y cómo los resolviste?",
+        "¿Cómo manejas los errores en tu código?",
+        "¿Qué opinas de la programación orientada a objetos frente a otros paradigmas?"
+      ],
+      "Redes": [
+        "¿Qué es una dirección IP y cómo funciona?",
+        "Explique brevemente el modelo OSI y su propósito.",
+        "¿Qué es una máscara de subred y por qué es importante?",
+        "¿Cómo asegurarías la comunicación entre dos redes?",
+        "Describe una situación en la que tuviste que solucionar un problema de red.",
+        "¿Qué es el protocolo TCP/IP y cómo se usa?",
+        "Explique NAT y su importancia en redes modernas.",
+        "¿Qué diferencia hay entre una red LAN y WAN?",
+        "¿Cómo configuras un servidor DNS?",
+        "¿Qué herramientas utilizas para diagnosticar problemas de red?"
+      ],
+      "DesarrolloWeb": [
+        "¿Qué es una API REST y cómo la implementas?",
+        "¿Cuál es la diferencia entre sesiones y tokens en autenticación?",
+        "¿Cómo manejarías la validación de formularios en una aplicación web?",
+        "¿Qué frameworks web prefieres usar y por qué?",
+        "Explique la diferencia entre el frontend y el backend.",
+        "¿Cómo optimizas el rendimiento de un sitio web?",
+        "¿Qué son las cookies y cómo se utilizan?",
+        "Describe el proceso de despliegue de una aplicación web.",
+        "¿Cómo manejas la seguridad en aplicaciones web?",
+        "¿Qué librerías de frontend has utilizado?"
+      ],
+      "DesarrolloMovil": [
+        "¿Qué diferencia hay entre una app nativa y una app híbrida?",
+        "¿Cómo manejas el almacenamiento local en aplicaciones móviles?",
+        "Explique el ciclo de vida de una actividad en Android.",
+        "¿Qué framework prefieres para desarrollo móvil y por qué?",
+        "¿Cómo optimizas el rendimiento en aplicaciones móviles?",
+        "¿Qué estrategias usas para manejar diferentes tamaños de pantalla?",
+        "¿Cómo implementas notificaciones push?",
+        "¿Qué metodologías usas para probar aplicaciones móviles?",
+        "¿Cómo integras APIs de terceros en una app móvil?",
+        "Describe tu experiencia desarrollando para Android o iOS."
+      ],
+      "Hardware": [
+        "¿Qué componentes consideras más importantes en un sistema informático?",
+        "Explique el funcionamiento de un procesador.",
+        "¿Qué es un bus de datos y cuál es su función?",
+        "¿Cómo diagnosticas problemas de hardware?",
+        "Explique RAID y sus niveles más comunes.",
+        "¿Qué es un sistema embebido y cómo se programa?",
+        "¿Qué diferencia hay entre RAM y ROM?",
+        "¿Cómo evaluarías la compatibilidad entre componentes?",
+        "Explique qué es overclocking y sus riesgos.",
+        "¿Qué herramientas utilizas para pruebas de hardware?"
+      ]
+      
+    },
+    "Gestion Empresarial": {
+      "General": [
+        "Cuéntanos un poco sobre tu formación y experiencia laboral.",
+        "¿Por qué te interesa este puesto?",
+        "¿Cómo manejas los conflictos en el lugar de trabajo?",
+        "Descríbeme un logro profesional del que estés orgulloso.",
+        "¿Qué herramientas utilizas para la gestión de proyectos?",
+        "¿Cómo priorizas las tareas cuando tienes múltiples proyectos?",
+        "Describe tu estilo de liderazgo.",
+        "¿Cómo manejas las críticas constructivas?",
+        "¿Qué opinas sobre la importancia de la planificación estratégica?",
+        "¿Cómo evalúas tu desempeño profesional?"
+      ],
+      "Liderazgo": [
+        "Describe una situación donde lideraste un equipo hacia el éxito.",
+        "¿Cómo motivas a tu equipo para alcanzar sus objetivos?",
+        "¿Qué estrategias utilizas para delegar tareas efectivamente?",
+        "Cuéntanos de un momento en el que tuviste que manejar un conflicto en tu equipo.",
+        "¿Cómo estableces metas claras para tu equipo?",
+        "¿Qué importancia tiene la comunicación en el liderazgo?",
+        "¿Cómo evalúas el desempeño de tus subordinados?",
+        "Describe una situación en la que tuviste que tomar una decisión difícil como líder.",
+        "¿Cómo manejas el estrés de un rol de liderazgo?",
+        "¿Qué tipo de líder consideras que eres?"
+      ]
+    
+    }
+  }
+  

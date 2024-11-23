@@ -6,7 +6,8 @@ import DataTimePicker from '@react-native-community/datetimepicker';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Network from 'expo-network';
 import axios from 'axios';
-
+import { IPADDRESS } from './config';
+console.log(`SIGNUP = ${IPADDRESS}`);
 export default function SignUpScreen() {
   const logo = require('../components/img/Logo.png');
   const router = useRouter();
@@ -48,7 +49,7 @@ export default function SignUpScreen() {
     }
     
     try {
-      const response = await axios.post(`http:/192.168.1.12:3000/api/auth/signup`, {
+      const response = await axios.post(`http:/${IPADDRESS}:3000/api/auth/signup`, {
         nombre: name,
         apellidos: lastName,
         correo: email,

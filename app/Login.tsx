@@ -4,6 +4,10 @@ import { useRouter, Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { IPADDRESS } from './config';
+
+console.log(`LOGIN = ${IPADDRESS}`);
+
 export default function LoginScreen() {
   const logoBW = require('../components/img/LogoBW.png');
 
@@ -28,20 +32,23 @@ export default function LoginScreen() {
   }, []);
 
   const handleLogin = async () => {
+    console.log('Botón de iniciar sesión presionado');
+    
     if (!correo || !contra) {
       Alert.alert('Error', 'Por favor, ingresa el correo y la contraseña.');
       return;
     }
-
+    
     try {
-      const response = await fetch('http://192.168.1.12:3000/api/auth/login', {
+      //console.log(IPADDRESS);
+      const response = await fetch(`http://${IPADDRESS}:3000/api/auth/login`, {        
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ correo, contra }),
       });
-
+      console.log('redirecciono');
       const data = await response.json();
 
       if (data.token) {

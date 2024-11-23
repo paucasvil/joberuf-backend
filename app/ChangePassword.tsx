@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { IPADDRESS } from './config';
+console.log(`CP = ${IPADDRESS}`);
 export default function ChangePasswordScreen() {
   const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState('');
@@ -23,7 +24,7 @@ export default function ChangePasswordScreen() {
         return;
       }
       const response = await axios.put(
-        'http://192.168.1.12:3000/api/auth/changePassword',
+        `http://${IPADDRESS}:3000/api/auth/changePassword`,
         {
           oldPassword: currentPassword,
           newPassword: newPassword,

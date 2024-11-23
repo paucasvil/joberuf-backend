@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const authMiddleware = require('../middlewares/authMiddleware'); 
+const { authMiddleware } = require('../middlewares/authMiddleware');
+
 const { changePassword } = require('../controllers/authController');
 const multer = require('multer');
 const User = require('../models/users');
@@ -11,6 +12,7 @@ const { forgotPassword } = require('../controllers/authController');
 router.post('/signup', authController.signup);
 
 // Ruta para el inicio de sesión
+
 router.post('/login', authController.login);
 
 // Ruta para actualizar el perfil
@@ -19,9 +21,14 @@ router.put('/updateProfile', authMiddleware, authController.updateProfile);
 // Ruta para cambiar la contraseña
 router.put('/changePassword', authMiddleware, authController.changePassword);
 
-router.post('/forgotPassword', authController.forgotPassword);
+
+router.post('/forgotPassword', authMiddleware,  authController.forgotPassword);
 
 router.get('/getProfile', authMiddleware, authController.getProfile);
+
+
+
+
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -56,5 +63,28 @@ const storage = multer.diskStorage({
       res.status(500).json({ message: 'Error al subir la foto de perfil' });
     }
   });
+
+  const validateNextQuestionRequest = (req, res, next) => {
+    const { currentQuestionIndex, userSector } = req.body;
+    if (currentQuestionIndex === undefined || !userSector) {
+      return res.status(400).json({ message: 'Datos incompletos en la solicitud.' });
+    }
+    next();
+  };
+  
+  const validateFinishRequest = (req, res, next) => {
+    const { responses, sector, userId } = req.body;
+    if (!responses || !sector || !userId) {
+      return res.status(400).json({ message: 'Datos incompletos en la solicitud.' });
+    }
+    next();
+  };
+  
+ 
+   // Rutas de entrevista
+
+router.post('/startInterview', authMiddleware, authController.startInterview);
+router.post('/nextQuestion', authMiddleware, authController.nextQuestion);
+router.post('/finishInterview', authMiddleware, authController.finishInterview);
   
 module.exports = router;

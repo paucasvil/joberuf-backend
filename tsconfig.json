@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
-    "jsx": "react-native",
-    "strict": true,
+    "module": "ESNext",
+    "target": "ES5",
+    "jsx": "react",
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true
   },
   "exclude": [
     "node_modules"
