@@ -21,12 +21,19 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(false);
   const [userSector, setUserSector] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>(''); // Nombre del usuario
   const [interviewQuestions, setInterviewQuestions] = useState<{ topic: string; question: string }[]>([]);
-  const scrollViewRef = useRef<ScrollView | null>(null);
   const [isInputDisabled, setIsInputDisabled] = useState(false);
-  const isInputEditable = () => !loading && !isInputDisabled;
+  const [isIntroVisible, setIsIntroVisible] = useState(true); // Estado para la introducción
+  const scrollViewRef = useRef<ScrollView | null>(null);
 
   const MAX_QUESTIONS = 10;
+
+  const isInputEditable = () => !loading && !isInputDisabled;
+
+  const startSimulation = () => {
+    setIsIntroVisible(false);
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -43,14 +50,14 @@ export default function ChatScreen() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const { id, sector } = response.data.user;
+        const { id, sector, nombre } = response.data.user;
         console.log('Sector:', sector, 'User ID:', id);
 
         setUserSector(sector);
         setUserId(id);
-
+        setUserName(nombre);
         startInterview(sector, id);
-      } catch (error:any) {
+      } catch (error: any) {
         console.error('Error al obtener los datos del usuario:', error.response?.data || error.message);
         Alert.alert('Error', 'No se pudo obtener la información del usuario.');
       }
@@ -61,65 +68,63 @@ export default function ChatScreen() {
 
   const startInterview = async (sector: string, id: string) => {
     setLoading(true);
-  
+
     try {
-      const token = await AsyncStorage.getItem("token");
-      console.log("Token obtenido:", token);
-  
+      const token = await AsyncStorage.getItem('token');
+      console.log('Token obtenido:', token);
+
       if (!token) {
-        Alert.alert("Error", "Usuario no autenticado.");
+        Alert.alert('Error', 'Usuario no autenticado.');
         return;
       }
-  
+
       const response = await axios.post(
         `http://${IPADDRESS}:3000/api/auth/startInterview`,
         { userSector: sector, userId: id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-  
+
       const questions = response.data.questions.map((q: any) =>
-        typeof q === "string" ? { question: q, topic: "General" } : q
+        typeof q === 'string' ? { question: q, topic: 'General' } : q
       );
       setInterviewQuestions(questions);
       setMessages([
         {
           id: Date.now(),
-          sender: "Joby",
+          sender: 'Joby',
           text: `¡Hola! Soy tu entrevistador. Comencemos. ${questions[0]?.question || questions[0]}`,
-          type: "received",
+          type: 'received',
         },
       ]);
-    } catch (error:any) {
-      console.error("Error al iniciar la entrevista:", error.message);
-      Alert.alert("Error", "No se pudieron cargar las preguntas.");
+    } catch (error: any) {
+      console.error('Error al iniciar la entrevista:', error.message);
+      Alert.alert('Error', 'No se pudieron cargar las preguntas.');
     } finally {
       setLoading(false);
     }
   };
-  
-  
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
-  
+
     const userMessage: Message = {
       id: Date.now(),
-      sender: "Usuario",
+      sender: 'Usuario',
       text: inputText,
-      type: "sent",
+      type: 'sent',
     };
-  
+
     setMessages((prev) => [...prev, userMessage]);
-    setInputText("");
+    setInputText('');
     setLoading(true);
-  
+
     try {
-      const token = await AsyncStorage.getItem("token");
+      const token = await AsyncStorage.getItem('token');
       if (!token) {
-        Alert.alert("Error", "Usuario no autenticado.");
+        Alert.alert('Error', 'Usuario no autenticado.');
         return;
       }
-  
+
       const response = await axios.post(
         `http://${IPADDRESS}:3000/api/auth/nextQuestion`,
         {
@@ -131,37 +136,32 @@ export default function ChatScreen() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-  
+
       const nextQuestionObject = response.data.nextQuestion;
-  
-      // Verifica si hay una siguiente pregunta
+
       if (nextQuestionObject) {
         const botMessage: Message = {
           id: Date.now(),
-          sender: "Joby",
+          sender: 'Joby',
           text: nextQuestionObject.question,
-          type: "received",
+          type: 'received',
         };
-      
+
         setMessages((prev) => [...prev, botMessage]);
         setCurrentQuestionIndex((prev) => prev + 1);
       } else {
         finishInterview();
       }
-      
     } catch (error) {
-      console.error("Error al enviar la respuesta:", error);
-      Alert.alert("Error", "No se pudo enviar la respuesta.");
+      console.error('Error al enviar la respuesta:', error);
+      Alert.alert('Error', 'No se pudo enviar la respuesta.');
     } finally {
       setLoading(false);
     }
   };
-  
-  
-  
+
   const finishInterview = async () => {
-    setLoading(true); // Mostrar animación de cargando
-    setInputText(''); // Limpia la barra de entrada
+    setLoading(true);
     setMessages((prev) => [
         ...prev,
         {
@@ -202,25 +202,56 @@ export default function ChatScreen() {
 
         const { feedback, score } = response.data;
 
-        const resultMessage: Message = {
-            id: Date.now(),
-            sender: 'Joby',
-            text: `Entrevista finalizada. Puntuación final: ${score}/100.\n\nFeedback:\n${feedback}`,
-            type: 'received',
-        };
-
-        setMessages((prev) => [...prev, resultMessage]);
+        // Mostrar feedback completo
+        setMessages((prev) => [
+            ...prev,
+            {
+                id: Date.now(),
+                sender: 'Joby',
+                text: feedback,
+                type: 'received',
+            },
+            {
+                id: Date.now() + 1,
+                sender: 'Joby',
+                text: `Puntaje promedio final: ${score}/100.`,
+                type: 'received',
+            },
+        ]);
     } catch (error) {
         console.error('Error al finalizar la entrevista:', error);
         Alert.alert('Error', 'No se pudo finalizar la entrevista.');
     } finally {
         setLoading(false);
-        setIsInputDisabled(true); // Deshabilitar el campo de entrada
+        setIsInputDisabled(true);
     }
 };
 
+  if (isIntroVisible) {
+    return (
+      <View style={styles.introContainer}>
+        <Text style={styles.introTitle}>¡Hola, {userName}!</Text>
+        <Text style={styles.introText}>
+          A continuación, iniciaremos una simulación de entrevista de trabajo diseñada específicamente para el área de{' '}
+          <Text style={{ fontWeight: 'bold' }}>{userSector}</Text>.
+        </Text>
+        <Text style={styles.introText}>
+          Responde cada pregunta con el mayor detalle posible. Estas respuestas serán evaluadas por un sistema de
+          inteligencia artificial, que te brindará retroalimentación detallada y una puntuación final.
+        </Text>
+        <Text style={styles.introText}>
+          Nota: Esta simulación solo incluye preguntas teóricas y conceptuales. No se realizarán preguntas prácticas ni de resolución de ejercicios de programación.
+        </Text>
+        <Text style={styles.introText}>
+          Cuando estés listo, presiona el botón "Comenzar Simulación" para iniciar.
+        </Text>
+        <TouchableOpacity style={styles.startButton} onPress={startSimulation}>
+          <Text style={styles.startButtonText}>Comenzar Simulación</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
-  
   return (
     <View style={styles.container}>
       <ScrollView
@@ -234,7 +265,10 @@ export default function ChatScreen() {
             style={[styles.messageRow, msg.type === 'sent' ? styles.sentMessageRow : styles.receivedMessageRow]}
           >
             <View
-              style={[styles.messageContent, msg.type === 'sent' ? styles.sentMessageContent : styles.receivedMessageContent]}
+              style={[
+                styles.messageContent,
+                msg.type === 'sent' ? styles.sentMessageContent : styles.receivedMessageContent,
+              ]}
             >
               <Text style={styles.messageText}>{msg.text}</Text>
             </View>
@@ -244,21 +278,20 @@ export default function ChatScreen() {
 
       {loading && <ActivityIndicator size="large" color="#39e991" style={styles.loading} />}
 
-      {currentQuestionIndex < MAX_QUESTIONS && (
+      {!isInputDisabled && currentQuestionIndex < MAX_QUESTIONS && (
         <View style={styles.inputContainer}>
           <TextInput
-            placeholder={isInputDisabled ? "Entrevista finalizada" : "Escribe tu respuesta..."}
+            placeholder="Escribe tu respuesta..."
             style={styles.input}
             value={inputText}
             onChangeText={setInputText}
-            editable={!loading && !isInputDisabled}// Deshabilita la entrada cuando sea necesario          
+            editable={isInputEditable()}
           />
           <TouchableOpacity onPress={sendMessage} disabled={loading}>
             <FontAwesome name="paper-plane" size={20} color="#39e991" />
           </TouchableOpacity>
         </View>
       )}
-      {loading && <ActivityIndicator size="large" color="#39e991" style={styles.loading} />}
     </View>
   );
 }
@@ -326,5 +359,40 @@ const styles = StyleSheet.create({
   },
   loading: {
     marginBottom: 10,
+  },
+  introContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f9f9f9',
+  },
+  introTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#363636',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  introText: {
+    fontSize: 16,
+    color: '#606060',
+    textAlign: 'center',
+    marginBottom: 15,
+    lineHeight: 24,
+  },
+  startButton: {
+    marginTop: 20,
+    backgroundColor: '#39e991',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 10,
+    elevation: 2,
+  },
+  startButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
   },
 });

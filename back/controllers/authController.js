@@ -393,76 +393,68 @@ exports.nextQuestion = (req, res) => {
 };
 
 
-let finalScore = 0;
-
-const CHUNK_SIZE = 5; // Número de preguntas por bloque
-
-// Función para dividir preguntas y respuestas en bloques más pequeños
-function chunkArray(array, size) {
-    const chunks = [];
-    for (let i = 0; i < array.length; i += size) {
-        chunks.push(array.slice(i, i + size));
-    }
-    return chunks;
-}
 
 exports.finishInterview = async (req, res) => {
-    const { userId } = req.body;
+  const { userId } = req.body;
 
-    if (!userId) {
-        return res.status(400).json({ message: 'Datos incompletos en la solicitud.' });
-    }
+  if (!userId) {
+      return res.status(400).json({ message: 'Datos incompletos en la solicitud.' });
+  }
 
-    const session = activeSessions[userId];
-    if (!session) {
-        return res.status(404).json({ message: 'Sesión no encontrada para el usuario.' });
-    }
+  const session = activeSessions[userId];
+  if (!session) {
+      return res.status(404).json({ message: 'Sesión no encontrada para el usuario.' });
+  }
 
-    const chunks = chunkArray(session.responses, CHUNK_SIZE); // Divide las respuestas en bloques
-    let feedbackList = [];
-    let totalScore = 0;
+  try {
+      // Crear mensajes para OpenAI con todas las preguntas y respuestas
+      const messages = session.responses.map(({ question, answer }, index) => ({
+          role: 'user',
+          content: `Pregunta ${index + 1}: ${question.question}\nRespuesta: ${answer}`,
+      }));
 
-    try {
-        for (const chunk of chunks) {
-            const messages = chunk.map(({ question, answer }) => ({
-                role: 'user',
-                content: `Pregunta: ${question.question}\nRespuesta: ${answer}`,
-            }));
+      // Enviar todas las preguntas y respuestas en una sola solicitud a OpenAI
+      const response = await openai.chat.completions.create({
+          model: 'gpt-3.5-turbo',
+          messages: [
+              {
+                  role: 'system',
+                  content: 'Eres un entrevistador profesional. Proporciona retroalimentación detallada para cada respuesta y asigna una puntuación individual de 0 a 10. Al final, calcula un promedio general y devuélvelo junto con el feedback. El formato debe ser claro y legible.',
+              },
+              ...messages,
+          ],
+          max_tokens: 2000,
+          temperature: 0.7,
+      });
 
-            const response = await openai.chat.completions.create({
-                model: 'gpt-3.5-turbo',
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'Eres un entrevistador profesional. Proporciona retroalimentación detallada para cada respuesta y calcula una puntuación final para este bloque. Devuelve solo el feedback y la puntuación en un formato claro.',
-                    },
-                    ...messages,
-                ],
-                max_tokens: 1000,
-                temperature: 0.7,
-            });
+      const feedback = response.choices[0].message?.content?.trim() || 'Sin feedback.';
+      const individualScores = [];
+      let totalScore = 0;
 
-            const feedback = response.choices[0].message?.content?.trim() || 'Sin feedback.';
-            feedbackList.push(feedback);
+      // Procesar el feedback para extraer puntuaciones individuales
+      const feedbackLines = feedback.split('\n');
+      feedbackLines.forEach((line) => {
+          const match = line.match(/Puntuación:\s*(\d+)/i);
+          if (match) {
+              const score = parseInt(match[1], 10);
+              individualScores.push(score);
+              totalScore += score;
+          }
+      });
 
-            // Extraer puntuación del feedback
-            const match = feedback.match(/Puntuación:\s*(\d+)/i);
-            const chunkScore = match ? parseInt(match[1], 10) : 0;
-            totalScore += chunkScore; // Suma los puntajes parciales
-        }
+      // Asegúrate de que no se divida por cero
+      const finalScore = individualScores.length > 0 ? Math.round(totalScore / individualScores.length) : 0;
 
-        // Calcular puntuación promedio
-        const finalScore = Math.round(totalScore / chunks.length);
+      // Eliminar sesión activa
+      delete activeSessions[userId];
 
-        // Eliminar sesión activa
-        delete activeSessions[userId];
-
-        res.status(200).json({
-            feedback: feedbackList.join('\n\n'), // Combina el feedback de todos los bloques
-            score: finalScore, // Puntaje promedio final
-        });
-    } catch (error) {
-        console.error('Error al finalizar la entrevista:', error);
-        res.status(500).json({ message: 'Error al finalizar la entrevista.' });
-    }
+      res.status(200).json({
+          feedback, // Retroalimentación completa
+          score: finalScore, // Puntaje promedio final
+          individualScores, // Puntuaciones individuales
+      });
+  } catch (error) {
+      console.error('Error al finalizar la entrevista:', error);
+      res.status(500).json({ message: 'Error al finalizar la entrevista.' });
+  }
 };
