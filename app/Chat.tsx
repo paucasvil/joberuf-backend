@@ -23,6 +23,8 @@ export default function ChatScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [interviewQuestions, setInterviewQuestions] = useState<{ topic: string; question: string }[]>([]);
   const scrollViewRef = useRef<ScrollView | null>(null);
+  const [isInputDisabled, setIsInputDisabled] = useState(false);
+  const isInputEditable = () => !loading && !isInputDisabled;
 
   const MAX_QUESTIONS = 10;
 
@@ -59,55 +61,129 @@ export default function ChatScreen() {
 
   const startInterview = async (sector: string, id: string) => {
     setLoading(true);
-    const token = await AsyncStorage.getItem('token');
-    console.log(`Token en startInterview: ${token}`);
-    console.log(`Sector : ${sector} y id : ${id}`);
-    if (!token) {
-      Alert.alert('Error', 'Usuario no autenticado.');
-      setLoading(false);
-      return;
-    }
-
+  
     try {
+      const token = await AsyncStorage.getItem("token");
+      console.log("Token obtenido:", token);
+  
+      if (!token) {
+        Alert.alert("Error", "Usuario no autenticado.");
+        return;
+      }
+  
       const response = await axios.post(
         `http://${IPADDRESS}:3000/api/auth/startInterview`,
         { userSector: sector, userId: id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      const questions = response.data.questions;
-      console.log('Preguntas recibidas:', questions);
+  
+      const questions = response.data.questions.map((q: any) =>
+        typeof q === "string" ? { question: q, topic: "General" } : q
+      );
       setInterviewQuestions(questions);
-
-      const firstQuestion: Message = {
-        id: Date.now(),
-        sender: 'Joby',
-        text: `¡Hola! Soy Joby, tu  entrevistador. Comencemos con esta entrevista. ${questions[0].question}`,
-        type: 'received',
-      };
-
-      setMessages([firstQuestion]);
+      setMessages([
+        {
+          id: Date.now(),
+          sender: "Joby",
+          text: `¡Hola! Soy tu entrevistador. Comencemos. ${questions[0]?.question || questions[0]}`,
+          type: "received",
+        },
+      ]);
     } catch (error:any) {
-      console.error('Error al iniciar la entrevista:', error.response?.data || error.message);
-      Alert.alert('Error', 'No se pudo iniciar la entrevista.');
+      console.error("Error al iniciar la entrevista:", error.message);
+      Alert.alert("Error", "No se pudieron cargar las preguntas.");
     } finally {
       setLoading(false);
     }
   };
+  
+  
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
   
     const userMessage: Message = {
       id: Date.now(),
-      sender: 'Usuario',
+      sender: "Usuario",
       text: inputText,
-      type: 'sent',
+      type: "sent",
     };
   
     setMessages((prev) => [...prev, userMessage]);
-    setInputText('');
+    setInputText("");
     setLoading(true);
+  
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Error", "Usuario no autenticado.");
+        return;
+      }
+  
+      const response = await axios.post(
+        `http://${IPADDRESS}:3000/api/auth/nextQuestion`,
+        {
+          userResponse: inputText,
+          currentQuestionIndex, // Enviamos el índice actual
+          userId,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+  
+      const nextQuestionObject = response.data.nextQuestion;
+  
+      // Verifica si hay una siguiente pregunta
+      if (nextQuestionObject) {
+        const botMessage: Message = {
+          id: Date.now(),
+          sender: "Joby",
+          text: nextQuestionObject.question,
+          type: "received",
+        };
+      
+        setMessages((prev) => [...prev, botMessage]);
+        setCurrentQuestionIndex((prev) => prev + 1);
+      } else {
+        finishInterview();
+      }
+      
+    } catch (error) {
+      console.error("Error al enviar la respuesta:", error);
+      Alert.alert("Error", "No se pudo enviar la respuesta.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  
+  
+  const finishInterview = async () => {
+    setLoading(true); // Mostrar animación de cargando
+    setInputText(''); // Limpia la barra de entrada
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        sender: 'Joby',
+        text: 'Generando feedback y puntuación. Por favor espera...',
+        type: 'received',
+      },
+    ]);
+  
+    const userResponses = messages
+    .filter((msg) => msg.type === "sent" && msg.text.trim() !== "")
+    .map((msg, index) => {
+      const questionObj = interviewQuestions[index] || { question: "Pregunta no disponible", topic: "N/A" };
+      return {
+        question: questionObj.question,
+        answer: msg.text.trim(),
+      };
+    });
+
+
+
   
     try {
       const token = await AsyncStorage.getItem('token');
@@ -117,56 +193,18 @@ export default function ChatScreen() {
       }
   
       const response = await axios.post(
-        `http://${IPADDRESS}:3000/api/auth/nextQuestion`,
+        `http://${IPADDRESS}:3000/api/auth/finishInterview`,
         {
-          userResponse: inputText,
-          currentQuestionIndex,
           userId,
+          responses: userResponses,
+          userSector,
         },
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
-  
-      const nextQuestionObject = interviewQuestions[currentQuestionIndex + 1]; 
-      const nextQuestionText = nextQuestionObject?.question; 
-  
-      if (currentQuestionIndex + 1 < MAX_QUESTIONS && nextQuestionText) {
-        const botMessage: Message = {
-          id: Date.now(),
-          sender: 'Joby',
-          text: nextQuestionText, 
-          type: 'received',
-        };
-        setMessages((prev) => [...prev, botMessage]);
-        setCurrentQuestionIndex((prev) => prev + 1);
-      } else {
-        finishInterview();
-      }
-    } catch (error) {
-      console.error('Error al enviar la respuesta:', error);
-      Alert.alert('Error', 'No se pudo enviar la respuesta.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const finishInterview = async () => {
-    setLoading(true);
-  
-    const userResponses = messages
-      .filter((msg) => msg.type === 'sent')
-      .map((msg, index) => ({
-        question: interviewQuestions[index],
-        answer: msg.text,
-      }));
-  
-    try {
-      const response = await axios.post(`http://${IPADDRESS}:3000/api/auth/finishInterview`, {
-        userId,
-        responses: userResponses,
-        userSector,
-      });
   
       const { feedback, score } = response.data;
   
@@ -183,10 +221,13 @@ export default function ChatScreen() {
       Alert.alert('Error', 'No se pudo finalizar la entrevista.');
     } finally {
       setLoading(false);
+      setInputText(''); // Limpia la barra de entrada
+      setInterviewQuestions([]);
+      setIsInputDisabled(true);
     }
   };
   
-
+  
   return (
     <View style={styles.container}>
       <ScrollView
@@ -213,17 +254,18 @@ export default function ChatScreen() {
       {currentQuestionIndex < MAX_QUESTIONS && (
         <View style={styles.inputContainer}>
           <TextInput
-            placeholder="Escribe tu respuesta..."
+            placeholder={isInputDisabled ? "No puedes responder más" : "Escribe tu respuesta..."}
             style={styles.input}
             value={inputText}
             onChangeText={setInputText}
-            editable={!loading}
+            editable={!loading && !isInputDisabled} // Deshabilita la entrada cuando sea necesario          
           />
           <TouchableOpacity onPress={sendMessage} disabled={loading}>
             <FontAwesome name="paper-plane" size={20} color="#39e991" />
           </TouchableOpacity>
         </View>
       )}
+      {loading && <ActivityIndicator size="large" color="#39e991" style={styles.loading} />}
     </View>
   );
 }

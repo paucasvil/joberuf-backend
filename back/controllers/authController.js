@@ -301,65 +301,68 @@ exports.forgotPassword = async (req, res) => {
 };
 
 
-
 function getRandomQuestions(sector) {
-  console.log(`Sector recibido en getRandomQuestions: ${sector}`);
-  const sectorData = questionsData[sector] || questionsData.General;
-  
-  const generalQuestions = sectorData.General || [];
-  const selectedGeneralQuestions = generalQuestions.slice(0, 3); 
+  console.log("Sector recibido en getRandomQuestions:", sector);
 
-  const otherTopics = Object.entries(sectorData).filter(([topic]) => topic !== 'General');
-  const randomQuestions = [];
-
-  while (randomQuestions.length < 7 && otherTopics.length > 0) {
-    const [topic, questions] = otherTopics[Math.floor(Math.random() * otherTopics.length)];
-    const question = questions[Math.floor(Math.random() * questions.length)];
-    randomQuestions.push({ topic, question });
+  const sectorData = questionsData[sector];
+  if (!sectorData) {
+    console.error("Error: Sector no encontrado en el archivo JSON:", sector);
+    return [];
   }
 
-  const combinedQuestions = [
-    ...selectedGeneralQuestions.map(question => ({ topic: 'General', question })),
-    ...randomQuestions,
-  ];
+  const generalQuestions = sectorData.General || [];
+  const otherTopics = Object.entries(sectorData).filter(([topic]) => topic !== "General");
 
-  console.log('Preguntas generadas:', combinedQuestions);
-  return combinedQuestions.slice(0, 10); 
+  try {
+    const randomQuestions = otherTopics
+      .map(([topic, questions]) => {
+        const index = Math.floor(Math.random() * questions.length);
+        return { topic, question: questions[index] };
+      })
+      .slice(0, 7);
+
+    const finalQuestions = [
+      ...generalQuestions.slice(0, 3).map((q) => ({ topic: "General", question: q })),
+      ...randomQuestions,
+    ];
+
+    console.log("Preguntas generadas:", finalQuestions);
+    return finalQuestions;
+  } catch (error) {
+    console.error("Error generando preguntas aleatorias:", error);
+    return [];
+  }
 }
-
 
 
 
 let activeSessions = {};
 exports.startInterview = (req, res) => {
-  console.log('Solicitud recibida en startInterview:', req.body);
+  console.log("Solicitud recibida en startInterview:", req.body);
 
   const { userSector, userId } = req.body;
 
   if (!userSector || !userId) {
-    console.error('Datos incompletos en startInterview:', { userSector, userId });
-    return res.status(400).json({ message: 'Datos incompletos en la solicitud.' });
+    console.error("Error: Datos incompletos en la solicitud:", req.body);
+    return res.status(400).json({ message: "Datos incompletos en la solicitud." });
   }
 
   try {
-    console.log(userSector);
-    const questions = getRandomQuestions(userSector);
-    console.log('Preguntas generadas:', questions);
+    const questions = getRandomQuestions(userSector); // Esta función genera las preguntas
+    if (!questions || questions.length === 0) {
+      console.error("Error: No se encontraron preguntas para el sector:", userSector);
+      return res.status(404).json({ message: "No se encontraron preguntas para el sector." });
+    }
 
-    activeSessions[userId] = {
-      questions,
-      responses: [],
-    };
+    activeSessions[userId] = { questions, responses: [] };
 
     console.log(`Sesión iniciada para el usuario ${userId} en el sector ${userSector}`);
     res.status(200).json({ questions });
   } catch (error) {
-    console.error('Error en startInterview:', error.message);
-    res.status(500).json({ message: 'Error al iniciar la entrevista.' });
+    console.error("Error interno en startInterview:", error.stack);
+    res.status(500).json({ message: "Ocurrió un error interno en el servidor." });
   }
 };
-
-
 
 exports.nextQuestion = (req, res) => {
   const { userId, userResponse, currentQuestionIndex } = req.body;
@@ -388,8 +391,7 @@ exports.nextQuestion = (req, res) => {
 
 
 
-let finalScore = 0; // Variable para almacenar el puntaje final
-
+let finalScore = 0;
 exports.finishInterview = async (req, res) => {
   const { userId } = req.body;
 
@@ -402,37 +404,55 @@ exports.finishInterview = async (req, res) => {
     return res.status(404).json({ message: 'Sesión no encontrada para el usuario.' });
   }
 
-  const messages = [
-    {
-      role: 'system',
-      content: 'Eres un entrevistador profesional. Proporciona una retroalimentación detallada y una puntuación de 0 a 100 basada únicamente en las respuestas proporcionadas por el usuario. Usa las preguntas para dar contexto, pero evalúa solo las respuestas.',
-    },
-    ...session.responses.map(({ question, answer }) => ({
-      role: 'user',
-      content: `Pregunta: ${question}\nRespuesta: ${answer}`,
-    })),
-  ];
+  const messages = session.responses.map(({ question, answer }) => ({
+    role: 'user',
+    content: `Pregunta: ${question}\nRespuesta: ${answer}`,
+  }));
 
   try {
-    const openaiResponse = await openai.chat.completions.create({
+    // Primera solicitud: Generar feedback
+    const feedbackResponse = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
-      messages,
+      messages: [
+        {
+          role: 'system',
+          content: 'Eres un entrevistador profesional. Proporciona retroalimentación detallada y una puntuación basada en las respuestas proporcionadas por el usuario. Usa las preguntas para contexto, pero evalúa solo las respuestas.',
+        },
+        ...session.responses.map(({ question, answer }) => ({
+          role: 'user',
+          content: `Pregunta: ${typeof question === 'string' ? question : JSON.stringify(question)}\nRespuesta: ${answer}`,
+        })),
+      ],
       max_tokens: 500,
       temperature: 0.7,
     });
 
-    const feedback = openaiResponse.choices[0].message?.content?.trim() || 'Sin retroalimentación.';
-    finalScore = Math.floor(Math.random() * 101); // Generar puntuación final aleatoria (puedes ajustar la lógica si es necesario)
+    const feedback = feedbackResponse.choices[0].message?.content?.trim() || 'Sin feedback.';
+
+    // Segunda solicitud: Generar puntuación
+    const scoreResponse = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: 'Eres un entrevistador profesional. Calcula una puntuación final entre 0 y 100 basada exclusivamente en las respuestas proporcionadas, se lo más honesto posible por favor. Solo responde con el número.' },
+        ...messages,
+      ],
+      max_tokens: 50,
+      temperature: 0.7,
+    });
+
+    const score = parseInt(scoreResponse.choices[0].message?.content?.trim(), 10) || 0;
+    finalScore = score; // Almacena el puntaje final en la variable global o local
 
     // Eliminar sesión activa
     delete activeSessions[userId];
 
     res.status(200).json({
       feedback,
-      score: finalScore, // Devolver el puntaje final
+      score: finalScore, // Devolver solo el puntaje final correcto
     });
   } catch (error) {
     console.error('Error al finalizar la entrevista:', error);
     res.status(500).json({ message: 'Error al finalizar la entrevista.' });
   }
 };
+
