@@ -163,70 +163,63 @@ export default function ChatScreen() {
     setLoading(true); // Mostrar animación de cargando
     setInputText(''); // Limpia la barra de entrada
     setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        sender: 'Joby',
-        text: 'Generando feedback y puntuación. Por favor espera...',
-        type: 'received',
-      },
-    ]);
-  
-    const userResponses = messages
-    .filter((msg) => msg.type === "sent" && msg.text.trim() !== "")
-    .map((msg, index) => {
-      const questionObj = interviewQuestions[index] || { question: "Pregunta no disponible", topic: "N/A" };
-      return {
-        question: questionObj.question,
-        answer: msg.text.trim(),
-      };
-    });
-
-
-
-  
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        Alert.alert('Error', 'Usuario no autenticado.');
-        return;
-      }
-  
-      const response = await axios.post(
-        `http://${IPADDRESS}:3000/api/auth/finishInterview`,
+        ...prev,
         {
-          userId,
-          responses: userResponses,
-          userSector,
+            id: Date.now(),
+            sender: 'Joby',
+            text: 'Generando feedback y puntuación. Por favor espera...',
+            type: 'received',
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+    ]);
+
+    const userResponses = messages
+        .filter((msg) => msg.type === 'sent' && msg.text.trim() !== '')
+        .map((msg, index) => ({
+            question: interviewQuestions[index]?.question || 'Pregunta no disponible',
+            answer: msg.text.trim(),
+        }));
+
+    try {
+        const token = await AsyncStorage.getItem('token');
+        if (!token) {
+            Alert.alert('Error', 'Usuario no autenticado.');
+            return;
         }
-      );
-  
-      const { feedback, score } = response.data;
-  
-      const resultMessage: Message = {
-        id: Date.now(),
-        sender: 'Joby',
-        text: `Entrevista finalizada. Puntuación: ${score}/100.\n\nFeedback:\n${feedback}`,
-        type: 'received',
-      };
-  
-      setMessages((prev) => [...prev, resultMessage]);
+
+        const response = await axios.post(
+            `http://${IPADDRESS}:3000/api/auth/finishInterview`,
+            {
+                userId,
+                responses: userResponses,
+                userSector,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        const { feedback, score } = response.data;
+
+        const resultMessage: Message = {
+            id: Date.now(),
+            sender: 'Joby',
+            text: `Entrevista finalizada. Puntuación final: ${score}/100.\n\nFeedback:\n${feedback}`,
+            type: 'received',
+        };
+
+        setMessages((prev) => [...prev, resultMessage]);
     } catch (error) {
-      console.error('Error al finalizar la entrevista:', error);
-      Alert.alert('Error', 'No se pudo finalizar la entrevista.');
+        console.error('Error al finalizar la entrevista:', error);
+        Alert.alert('Error', 'No se pudo finalizar la entrevista.');
     } finally {
-      setLoading(false);
-      setInputText(''); // Limpia la barra de entrada
-      setInterviewQuestions([]);
-      setIsInputDisabled(true);
+        setLoading(false);
+        setIsInputDisabled(true); // Deshabilitar el campo de entrada
     }
-  };
-  
+};
+
+
   
   return (
     <View style={styles.container}>
@@ -254,11 +247,11 @@ export default function ChatScreen() {
       {currentQuestionIndex < MAX_QUESTIONS && (
         <View style={styles.inputContainer}>
           <TextInput
-            placeholder={isInputDisabled ? "No puedes responder más" : "Escribe tu respuesta..."}
+            placeholder={isInputDisabled ? "Entrevista finalizada" : "Escribe tu respuesta..."}
             style={styles.input}
             value={inputText}
             onChangeText={setInputText}
-            editable={!loading && !isInputDisabled} // Deshabilita la entrada cuando sea necesario          
+            editable={!loading && !isInputDisabled}// Deshabilita la entrada cuando sea necesario          
           />
           <TouchableOpacity onPress={sendMessage} disabled={loading}>
             <FontAwesome name="paper-plane" size={20} color="#39e991" />
