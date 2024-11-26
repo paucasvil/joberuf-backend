@@ -7,6 +7,7 @@ const { changePassword } = require('../controllers/authController');
 const multer = require('multer');
 const User = require('../models/users');
 const { forgotPassword } = require('../controllers/authController');
+const { saveScore, getScores } = require('../controllers/authController');
 
 // Ruta para el registro
 router.post('/signup', authController.signup);
@@ -87,4 +88,13 @@ router.post('/startInterview', authMiddleware, authController.startInterview);
 router.post('/nextQuestion', authMiddleware, authController.nextQuestion);
 router.post('/finishInterview', authMiddleware, authController.finishInterview);
   
+
+
+// Ruta para guardar la puntuación
+router.post('/scores', authController.saveScore);
+
+// Ruta para obtener las puntuaciones
+router.get('/getScores', authController.getScores);
+
+
 module.exports = router;

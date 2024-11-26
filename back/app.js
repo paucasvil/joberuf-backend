@@ -6,7 +6,8 @@ const chatRoutes = require('./routes/ChatRoutes');  // Importa las rutas
 dotenv.config();
 const app = express();
 const path = require('path');
-
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
 // Servir archivos estáticos desde la carpeta 'uploads'
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Middleware para parsear JSON

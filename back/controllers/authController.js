@@ -127,6 +127,7 @@ exports.getProfile = async (req, res) => {
         correo: user.correo,
         telefono: user.telefono,
         sector: user.sector,
+        photo :user.fotoPerfil,
         habilidadesTecnicas: user.habilidadesTecnicas,
         habilidadesBlandas: user.habilidadesBlandas,
       },
@@ -450,11 +451,78 @@ exports.finishInterview = async (req, res) => {
 
       res.status(200).json({
           feedback, // Retroalimentación completa
-          score: finalScore, // Puntaje promedio final
-          individualScores, // Puntuaciones individuales
+          score: finalScore, //Puntaje promedio final
+          individualScores, //Puntuaciones individuales
       });
   } catch (error) {
       console.error('Error al finalizar la entrevista:', error);
       res.status(500).json({ message: 'Error al finalizar la entrevista.' });
   }
 };
+
+
+// Guardar puntuación de entrevista
+exports.saveScore = async (req, res) => {
+  const { userId, score } = req.body;
+  if (!userId || score == null) {
+    return res.status(400).json({ message: 'Datos incompletos.' });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+
+    user.scores.push(score); // Agrega la nueva puntuación
+    if (user.scores.length > 3) user.scores.shift(); // Mantén solo las últimas 3 puntuaciones
+    await user.save();
+
+    const averageScore = user.scores.reduce((a, b) => a + b, 0) / user.scores.length;
+
+    res.status(200).json({
+      lastScore: score,
+      averageScore,
+      message: 'Puntuación guardada correctamente.',
+    });
+  } catch (error) {
+    console.error('Error al guardar puntuación:', error);
+    res.status(500).json({ message: 'Error al guardar la puntuación.' });
+  }
+};
+
+
+
+exports.getScores = async (req, res) => {
+  const { userId } = req.query
+  try {
+    if (!userId) {
+      return res.status(400).json({ message: 'Falta el userId en la solicitud.' });
+    }
+    // Retrieve the user's scores directly from the User collection
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+    const scores = user.scores; // Access the scores array
+    console.log(scores);
+    if (scores.length === 0) {
+      // If no scores, return initial progress as 0
+      return res.status(200).json({
+        lastScore: 0,
+        averageScore: 0,
+      });
+    }
+
+    const lastScore = scores[scores.length - 1]; // Last score
+    const averageScore = scores.reduce((acc, item) => acc + item, 0) / scores.length; // Average
+    res.status(200).json({
+      lastScore,
+      averageScore,
+    });
+  } catch (error) {
+    console.error('Error al obtener los puntajes:', error);
+    res.status(500).json({ message: 'Error al obtener los puntajes.' });
+  }
+};
+

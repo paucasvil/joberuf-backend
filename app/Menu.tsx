@@ -1,100 +1,145 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import * as Progress from 'react-native-progress';
 import { Link } from 'expo-router';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { IPADDRESS } from './config';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
 
 export default function PlanJoberufScreen() {
   const fotoPerfil = require('../components/img/FotoPerfil.jpg');
   const cv = require('../components/img/CV.png');
   const message = require('../components/img/Message.png');
 
+  const [userSector, setUserSector] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
+  const [lastScore, setLastScore] = useState<number>(0);
+  const [averageScore, setAverageScore] = useState<number>(0);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const fetchUserData = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Usuario no autenticado.');
+        return;
+      }
+
+      const profileResponse = await axios.get(`http://${IPADDRESS}:3000/api/auth/getProfile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const { id, sector, nombre } = profileResponse.data.user;
+      setUserSector(sector);
+      setUserId(id);
+      setUserName(nombre);
+
+      const scoresResponse = await axios.get(`http://${IPADDRESS}:3000/api/auth/getScores`, {
+        params: { userId: id },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const { lastScore, averageScore } = scoresResponse.data;
+      setLastScore(lastScore);
+      setAverageScore(averageScore);
+    } catch (error: any) {
+      if (error.response) {
+        console.error('Error en la respuesta del servidor:', error.response.data);
+        Alert.alert('Error', `Error del servidor: ${error.response.data.message}`);
+      } else if (error.request) {
+        console.error('No se recibió respuesta del servidor:', error.request);
+        Alert.alert('Error', 'No se recibió respuesta del servidor.');
+      } else {
+        console.error('Error al configurar la solicitud:', error.message);
+        Alert.alert('Error', `Error al configurar la solicitud: ${error.message}`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserData();
+
+      return () => {
+        // Lógica de limpieza si es necesaria
+      };
+    }, [])
+  );
+  
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#39e991" />
+      </View>
+    );
+  }
+
   return (
-    <View style = {styles.backgroundContainer}>
-      <ScrollView contentContainerStyle = {styles.scrollContainer}>
-
+    <View style={styles.backgroundContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Encabezado */}
-        <Image source = {fotoPerfil} style = {styles.profileImage} />
-        <View style = {styles.titleContainer}>
-          <Text style = {styles.title}>Bienvenido,</Text>
-          <Text style = {styles.subtitle}>Maximiza tu potencial</Text>
+        <Image source={fotoPerfil} style={styles.profileImage} />
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Bienvenido,</Text>
+          <Text style={styles.subtitle}>Maximiza tu potencial</Text>
         </View>
 
-        {/* Programa de mejora de habilidades */}
-        <View style = {styles.programContainer}>
-        <Text style = {styles.programTitle}>Programa de mejora de habilidades</Text>
-          <View style = {styles.skillContainer}>
-            <Text style = {styles.skillText}>Certificación en progreso</Text>
-            <Text style = {styles.progressText}>Certificaciones en curso: 3</Text>
+        {/* Programa de mejora */}
+        <View style={styles.programContainer}>
+          <Text style={styles.programTitle}>Simulación de entrevistas</Text>
+
+          {/* Última puntuación */}
+          <View style={styles.skillContainer}>
+            <Text style={styles.skillText}>Última puntuación:</Text>
+            <Text style={styles.progressText}>{lastScore}/10</Text>
             <Progress.Bar
-              style = {styles.progressBarContainer}
-              width = {null}
-              height = {8}
-              color = '#9300da'
-              borderRadius = {6}
-              progress = {0.7}
-              borderWidth = {0}
-              unfilledColor = '#f2f2f2'
+              style={styles.progressBarContainer}
+              width={null}
+              height={8}
+              color="#9300da"
+              borderRadius={6}
+              progress={lastScore / 10}
+              borderWidth={0}
+              unfilledColor="#f2f2f2"
             />
           </View>
 
-          <View style = {styles.skillContainer}>
-            <Text style = {styles.skillText}>Formación en habilidades blandas</Text>
-            <Text style = {styles.progressText}>45% completado</Text>
+          {/* Promedio últimas 3 simulaciones */}
+          <View style={styles.skillContainer}>
+            <Text style={styles.skillText}>Promedio últimas 3 entrevistas:</Text>
+            <Text style={styles.progressText}>{averageScore.toFixed(2)}/10</Text>
             <Progress.Bar
-              style = {styles.progressBarContainer}
-              width = {null}
-              height = {8}
-              color = '#c141ff'
-              borderRadius = {6}
-              progress = {0.45}
-              borderWidth = {0}
-              unfilledColor = '#f2f2f2'
-            />
-          </View>
-
-          <View style = {styles.skillContainer}>
-            <Text style = {styles.skillText}>Desarrollo de habilidades técnicas</Text>
-            <Text style = {styles.progressText}>60% completado</Text>
-            <Progress.Bar
-              style = {styles.progressBarContainer}
-              width = {null}
-              height = {8}
-              color = '#9300da'
-              borderRadius = {6}
-              progress = {0.6}
-              borderWidth = {0}
-              unfilledColor = '#f2f2f2'
-            />
-          </View>
-
-          <View style = {styles.skillContainer}>
-            <Text style = {styles.skillText}>Enfoque de crecimiento profesional</Text>
-            <Text style = {styles.progressText}>20% mejora</Text>
-            <Progress.Bar
-              style = {styles.progressBarContainer}
-              width = {null}
-              height = {8}
-              color = '#c141ff'
-              borderRadius = {6}
-              progress = {0.2}
-              borderWidth = {0}
-              unfilledColor = '#f2f2f2'
+              style={styles.progressBarContainer}
+              width={null}
+              height={8}
+              color="#c141ff"
+              borderRadius={6}
+              progress={averageScore / 10}
+              borderWidth={0}
+              unfilledColor="#f2f2f2"
             />
           </View>
         </View>
-
+        
         {/* Botones */}
-        <Link href = '/Curriculum' asChild>
-          <TouchableOpacity style = {styles.buttonCV}>
-            <Image source = {cv} style = {styles.icon} />
-            <Text style = {styles.buttonText}>Optimizar curriculum</Text>
+        <Link href="/Curriculum" asChild>
+          <TouchableOpacity style={styles.buttonCV}>
+            <Image source={cv} style={styles.icon} />
+            <Text style={styles.buttonText}>Optimizar curriculum</Text>
           </TouchableOpacity>
         </Link>
 
-        <Link href = '/Chat' asChild>
-          <TouchableOpacity style = {styles.buttonInterview}>
-            <Image source = {message} style = {styles.icon} />
-            <Text style = {styles.buttonText}>Chatbot de entrevista</Text>
+        <Link href="/Chat" asChild>
+          <TouchableOpacity style={styles.buttonInterview}>
+            <Image source={message} style={styles.icon} />
+            <Text style={styles.buttonText}>Chatbot de entrevista</Text>
           </TouchableOpacity>
         </Link>
       </ScrollView>
@@ -103,6 +148,12 @@ export default function PlanJoberufScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
   backgroundContainer: {
     flex: 1,
     backgroundColor: '#ffffff',
@@ -121,7 +172,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     marginLeft: 80,
     marginTop: -50,
-    marginBottom: 30,
+    marginBottom: 50,
   },
   title: {
     fontSize: 20,
@@ -136,7 +187,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     padding: 25,
     borderRadius: 24,
-    marginBottom: 25,
+    marginBottom: 50,
     borderWidth: 2,
     borderColor: '#e5e7eb',
   },
@@ -156,7 +207,7 @@ const styles = StyleSheet.create({
   },
   skillContainer: {
     width: '100%',
-    marginBottom: 8,
+    marginBottom: 10,
     alignItems: 'flex-start',
   },
   progressBarContainer: {
@@ -189,7 +240,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 10,
   },
-  row:{
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
   },

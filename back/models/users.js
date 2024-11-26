@@ -68,6 +68,7 @@ const usuarioSchema = new mongoose.Schema({
         type: String,
         trim: true,
     }],
+    scores: { type: [Number], default: [] },
 });
 
 module.exports = mongoose.model('users', usuarioSchema);
