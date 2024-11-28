@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Image,
 import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-
 import { IPADDRESS } from './config';
 
 type Message = {
@@ -240,57 +239,86 @@ export default function ChatScreen() {
     }
   };
 
+  if (isIntroVisible) {
+    return (
+      <View style={styles.introContainer}>
+        <Text style={styles.introTitle}>¡Bienvenido, {userName}!</Text>
+        <Text style={styles.introText}>
+          A continuación, iniciaremos una simulación de entrevista de trabajo diseñada específicamente para el área de{' '}
+          <Text style={{ fontWeight: 'bold' }}>{userSector}</Text>.
+        </Text>
+        <Text style={styles.introText}>
+          Responde cada pregunta con el mayor detalle posible. Estas respuestas serán evaluadas por un sistema de
+          inteligencia artificial, que te brindará retroalimentación detallada y una puntuación final.
+        </Text>
+        <Text style={styles.introText}>
+          Nota: Esta simulación solo incluye preguntas teóricas y conceptuales. No se realizarán preguntas prácticas ni de resolución de ejercicios de programación.
+        </Text>
+        <Text style={styles.introText}>
+          Recuerda que el objetivo de esta simulación es ayudarte a mejorar en tus entrevistas laborales. ¡Sé honesto en
+          tus respuestas y da lo mejor de ti!
+        </Text>
+        <Text style={styles.introText}>
+          Cuando estés listo, presiona el botón "Comenzar Simulación" para iniciar.
+        </Text>
+        <TouchableOpacity style={styles.startButton} onPress={startSimulation}>
+          <Text style={styles.startButtonText}>Comenzar Simulación</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  
   return (
     <View style={styles.container}>
       <ScrollView ref={scrollViewRef}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         style={styles.messageContainer}
       >
-  {messages.map((msg) => (
-    <View
-      key={msg.id}
-      style={[
-        styles.messageRow,
-        msg.type === 'sent' ? styles.sentMessageRow : styles.receivedMessageRow,
-      ]}
-    >
-      {/* Avatar */}
-      {msg.type === 'received' && (
-        <View style={styles.avatarContainer}>
-          <Image
-            source={require('../components/img/ImagoBW.png')}
-            style={styles.profileImage}
-          />
-        </View>
-      )}
-      {msg.type === 'sent' && (
-        <View style={styles.avatarContainer}>
-          <Image
-            source={
-              userProfileImage // Variable que contiene la URL de la foto del usuario
-                ? { uri: userProfileImage }
-                : require('../components/img/Person.png') // Imagen por defecto
-            }
-            style={styles.profileImage}
-          />
-        </View>
-      )}
-
-      {/* Mensaje */}
+    {messages.map((msg) => (
       <View
+        key={msg.id}
         style={[
-          styles.messageContent,
-          msg.type === 'sent' ? styles.sentMessageContent : styles.receivedMessageContent,
+          styles.messageRow,
+          msg.type === 'sent' ? styles.sentMessageRow : styles.receivedMessageRow,
         ]}
       >
-        <Text style={styles.messageSender}>
-          {msg.sender === 'Joby' ? 'Joby' : userName}
-        </Text>
-        <Text style={styles.messageText}>{msg.text}</Text>
+        {/* Avatar */}
+        {msg.type === 'received' && (
+          <View style={styles.avatarContainer}>
+            <Image
+              source={require('../components/img/ImagoBW.png')}
+              style={styles.profileImage}
+            />
+          </View>
+        )}
+        {msg.type === 'sent' && (
+          <View style={styles.avatarContainer}>
+            <Image
+              source={
+                userProfileImage // Variable que contiene la URL de la foto del usuario
+                  ? { uri: userProfileImage }
+                  : require('../components/img/Person.png') // Imagen por defecto
+              }
+              style={styles.profileImage}
+            />
+          </View>
+        )}
+
+        {/* Mensaje */}
+        <View
+          style={[
+            styles.messageContent,
+            msg.type === 'sent' ? styles.sentMessageContent : styles.receivedMessageContent,
+          ]}
+        >
+          <Text style={styles.messageSender}>
+            {msg.sender === 'Joby' ? 'Joby' : userName}
+          </Text>
+          <Text style={styles.messageText}>{msg.text}</Text>
+        </View>
       </View>
-    </View>
-  ))}
-</ScrollView>
+    ))}
+  </ScrollView>
 
 
       {!isInputDisabled && currentQuestionIndex < MAX_QUESTIONS && (
@@ -320,6 +348,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 10,
     paddingVertical: 15,
+    paddingBottom: 80,
   },
   messageRow: {
     flexDirection: 'row',
@@ -386,5 +415,43 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 15,
     marginHorizontal: 5,
+  },
+  introContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#ffffff', // Fondo blanco para claridad
+  },
+  introTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#39e991', // Verde destacado para el título
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  introText: {
+    fontSize: 16,
+    color: '#333333', // Gris oscuro para legibilidad
+    textAlign: 'center',
+    marginBottom: 15,
+    lineHeight: 24, // Espaciado cómodo entre líneas
+  },
+  startButton: {
+    marginTop: 20,
+    backgroundColor: '#39e991', // Verde para el botón
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 10, // Bordes redondeados
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3, // Sombra para dar efecto elevado
+  },
+  startButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff', // Texto blanco para contraste
   },
 });

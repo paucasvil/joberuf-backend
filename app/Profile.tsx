@@ -8,13 +8,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 import { IPADDRESS } from './config';
-console.log(`PROFILE = ${IPADDRESS}`);
+import suggestionsData from '../back/data/suggestions.json'; // Importar JSON
 
 export default function UserProfileScreen() {
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
   const [nombre, setNombre] = useState('Nombre');
   const [correo, setCorreo] = useState('Correo');
   const [telefono, setTelefono] = useState('Telefono');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -29,14 +30,22 @@ export default function UserProfileScreen() {
         setNombre(user.nombre);
         setCorreo(user.correo);
         setTelefono(user.telefono);
-        setFotoPerfil(`http://${IPADDRESS}:3000/${user.fotoPerfil}`);        
+        //setFotoPerfil(`http://${IPADDRESS}:3000/${user.fotoPerfil}`);        
       } catch (error) {
         console.error("Error al obtener el perfil del usuario:", error);
       }
     };
 
+    // Obtener 3 sugerencias aleatorias
+    const randomSuggestions = () => {
+      const shuffled = [...suggestionsData.suggestions].sort(() => 0.5 - Math.random());
+      setSuggestions(shuffled.slice(0, 3));
+    };
+
     fetchUserProfile();
+    randomSuggestions();
   }, []);
+
   return (
     <View style = {styles.backgroundContainer}>
       <ScrollView contentContainerStyle = {styles.scrollContainer}>
@@ -57,7 +66,7 @@ export default function UserProfileScreen() {
           </TouchableOpacity>
         </Link>
 
-        {/* Botón de Editar perfil */}
+        {/* Botón de Cambiar contraseña */}
         <Link href = '/ChangePassword' asChild>
           <TouchableOpacity style = {styles.buttonEdit}>
             <Text style = {styles.buttonText}>Cambiar contraseña</Text>
@@ -67,23 +76,11 @@ export default function UserProfileScreen() {
         {/* Sección de sugerencias */}
         <Text style = {styles.suggestionsTitle}>Sugerencias para mejorar tu Curriculum</Text>
         
-        <View style = {styles.suggestionBox}>
-          <Text style = {styles.suggestionText}>
-            Considere agregar más certificaciones específicas de la industria para mejorar sus calificaciones
-          </Text>
-        </View>
-  
-        <View style = {styles.suggestionBox}>
-          <Text style = {styles.suggestionText}>
-            Participe en talleres en línea para adquirir experiencia práctica en tecnologías de tendencia
-          </Text>
-        </View>
-  
-        <View style = {styles.suggestionBox}>
-          <Text style = {styles.suggestionText}>
-            Actualiza tu perfil de Joberuf para reflejar los logros y proyectos recientes
-          </Text>
-        </View>
+        {suggestions.map((suggestion, index) => (
+          <View key={index} style={styles.suggestionBox}>
+            <Text style={styles.suggestionText}>{suggestion}</Text>
+          </View>
+        ))}
       </ScrollView>
     </View>
   );

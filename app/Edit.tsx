@@ -47,11 +47,13 @@ export default function EditProfileScreen() {
         
         
         const user = response.data.user;
+        console.log(user);
 
-        setName(user.nombre);
+        setName(user.nombre);        
         setEmail(user.correo);
         setCellphone(user.telefono);
         setSector(user.sector);
+        console.log(user.fecha);
         setBirthday(new Date(user.fecha));
         
         // Configura la URL completa de la imagen si existe

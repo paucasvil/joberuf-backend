@@ -39,7 +39,10 @@ exports.signup = async (req, res) => {
     }
     // Encriptar la contraseña
     const hashedPassword = await bcrypt.hash(contra, 10);
-    // Crear un nuevo usuario
+    
+    //const fotoPerfil = setFoto(nombre);
+
+    // Crear un nuevo usuario    
     const user = new User({
       nombre,
       apellidos,
@@ -50,6 +53,7 @@ exports.signup = async (req, res) => {
       fecha: new Date(fecha), // Agrega la fecha de nacimiento
       fechaRegistro: new Date(),
       perfilCompleto: false,
+      fotoPerfil : setFoto(nombre),
     });
     // Guardar el usuario en la base de datos
     await user.save();
@@ -59,13 +63,39 @@ exports.signup = async (req, res) => {
     res.status(500).json({ message: 'Error al registrar el usuario.' });
   }
 };
+
+// Función para asignar la foto de perfil basada en la primera letra del nombre
+function setFoto(nombre) {
+  console.log(nombre);
+  if (!nombre || nombre.length === 0) {
+    return '../assets/images/imago.png'; // Imagen predeterminada si no hay nombre
+  }
+
+  // Obtener la primera letra del nombre y convertirla a mayúscula
+  const primeraLetra = nombre.charAt(0).toUpperCase();
+
+  // Seleccionar una carpeta aleatoria de las disponibles
+  const carpetas = ['images', 'images2', 'images3', 'images4', 'images5'];
+  const carpetaAleatoria = carpetas[Math.floor(Math.random() * carpetas.length)];
+
+  // Construir la ruta de la imagen
+  const rutaImagen = `../assets/images/${carpetaAleatoria}/${primeraLetra}.png`;
+
+  // Verificar si el archivo existe
+  if (fs.existsSync(path.resolve(__dirname, `../${rutaImagen}`))) {
+    return rutaImagen; // Retorna la ruta de la imagen si existe
+  } else {
+    return 'assets/images/imago.png'; // Imagen predeterminada si no se encuentra
+  }
+}
+
 // Controlador para el inicio de sesión de usuarios
 exports.login = async (req, res) => {
   //console.log('Cuerpo recibido:', req.body);
 
   try {
     const { correo, contra } = req.body;
-    //console.log('Buscando usuario con correo:', correo);
+    //console.log('Buscando usuario con correo:', correo)c
 
     const user = await User.findOne({ correo });
     if (!user) {
@@ -118,7 +148,14 @@ exports.getProfile = async (req, res) => {
       console.error('Error: Usuario no encontrado para el ID:', userId);
       return res.status(404).json({ message: 'Usuario no encontrado.' });
     }
-
+    console.log(user.fotoPerfil);
+    console.log(user.nombre);
+    let fotoPerfil = user.fotoPerfil;
+    if (!fotoPerfil) {
+      // Asignar imagen basada en la primera letra del nombre
+      fotoPerfil = setFoto(user.nombre);
+    }
+    console.log (fotoPerfil);
     //console.log('Perfil de usuario obtenido correctamente:', user);
     res.status(200).json({
       user: {
@@ -127,7 +164,7 @@ exports.getProfile = async (req, res) => {
         correo: user.correo,
         telefono: user.telefono,
         sector: user.sector,
-        photo :user.fotoPerfil,
+        photo :fotoPerfil,
         habilidadesTecnicas: user.habilidadesTecnicas,
         habilidadesBlandas: user.habilidadesBlandas,
       },
@@ -392,12 +429,8 @@ exports.nextQuestion = (req, res) => {
 
   res.status(200).json({ nextQuestion });
 };
-
-
-
 exports.finishInterview = async (req, res) => {
   const { userId } = req.body;
-
   if (!userId) {
       return res.status(400).json({ message: 'Datos incompletos en la solicitud.' });
   }
@@ -490,9 +523,6 @@ exports.saveScore = async (req, res) => {
     res.status(500).json({ message: 'Error al guardar la puntuación.' });
   }
 };
-
-
-
 exports.getScores = async (req, res) => {
   const { userId } = req.query
   try {
