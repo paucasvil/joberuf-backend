@@ -1,14 +1,19 @@
+//Importaciones necesarias para la pantalla ForgotPassword
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { IPADDRESS } from './config';
-console.log(`FP = ${IPADDRESS}`);
+
+import { IPADDRESS } from './config'; //Importar la Ip para pruebas
+
+//Definir la pantalla ForgotPasswordScreen
 export default function ForgotPasswordScreen() {
+  //Declarar las constantes y rutas para el funcionamiento
   const router = useRouter();
   const { email } = useLocalSearchParams();
 
+  //Funcion para manejar el email
   const handleSendEmail = async () => {
     try {
       const response = await axios.post(`http://${IPADDRESS}:3000/api/auth/forgotPassword`, { email });
@@ -19,6 +24,7 @@ export default function ForgotPasswordScreen() {
       Alert.alert('Error', 'Hubo un problema al enviar el correo de restablecimiento. Inténtalo nuevamente.');
     }
   };
+  //Diseño de la pantalla
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Recuperación de Contraseña</Text>
@@ -38,7 +44,7 @@ export default function ForgotPasswordScreen() {
     </View>
   );
 }
-
+//Estilos de la pantalla
 const styles = StyleSheet.create({
   container: {
     flex: 1,

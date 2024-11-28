@@ -1,33 +1,40 @@
+//Importaciones necesarias para el desarrollo de la pantalla
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { IPADDRESS } from './config';
-console.log(`CP = ${IPADDRESS}`);
+import { IPADDRESS } from './config'; //Se importa la IP para pruebas
+
+//Declaracion del componente de pantalla ChangePasswordScreen
 export default function ChangePasswordScreen() {
-  const router = useRouter();
+  //Declaracion de los estados de credenciales
+  const router = useRouter(); 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  //Funcion para manejar el cambio de contraseña
   const handleChangePassword = async () => {
+    // Validación de que la nueva contraseña y la confirmación coincidan
     if (newPassword !== confirmPassword) {
       Alert.alert('Error', 'Las contraseñas no coinciden');
       return;
     }
     try {
+      //Recuperacion del token de autenticación
       const token = await AsyncStorage.getItem('token');
       if (!token) {
         Alert.alert('Error', 'No se encontró el token de autenticación.');
         return;
       }
+      //Petición PUT a la API para cambiar la contraseña
       const response = await axios.put(
         `http://${IPADDRESS}:3000/api/auth/changePassword`,
         {
-          oldPassword: currentPassword,
-          newPassword: newPassword,
+          oldPassword: currentPassword,//Contraseña actual
+          newPassword: newPassword,//Nueva contraseña
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -43,7 +50,7 @@ export default function ChangePasswordScreen() {
       );
     }
   };
-
+  //Diseño de la pantalla
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Cambiar Contraseña</Text>
@@ -72,7 +79,7 @@ export default function ChangePasswordScreen() {
             secureTextEntry
           />
         </View>
-
+        
         <View style={styles.inputWrapper}>
           <MaterialIcons name='verified-user' size={24} color='#7c7c7c' style={styles.icon} />
           <TextInput
@@ -95,7 +102,7 @@ export default function ChangePasswordScreen() {
     </View>
   );
 }
-
+//Estilos para los componentes
 const styles = StyleSheet.create({
   container: {
     flex: 1,

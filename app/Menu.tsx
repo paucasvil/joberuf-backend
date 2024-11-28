@@ -1,26 +1,31 @@
+//Importaciones necesarias para la pantalla Menu
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import * as Progress from 'react-native-progress';
 import { Link } from 'expo-router';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { IPADDRESS } from './config';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 
+import { IPADDRESS } from './config'; //Importar IP para pruebas
 
+//Definir la pantalla PlanJoberufScreen
 export default function PlanJoberufScreen() {
-  const fotoPerfil = require('../components/img/FotoPerfil.jpg');
+  //Declarar las imagenes utilziadas  
   const cv = require('../components/img/CV.png');
   const message = require('../components/img/Message.png');
 
+  //Declarar las constantes necesarias para el funcionamiento de la pantalla
   const [userSector, setUserSector] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('');
   const [lastScore, setLastScore] = useState<number>(0);
   const [averageScore, setAverageScore] = useState<number>(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
 
+  //Definir la funcion para manejo de los datos del usuario
   const fetchUserData = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -28,51 +33,55 @@ export default function PlanJoberufScreen() {
         Alert.alert('Error', 'Usuario no autenticado.');
         return;
       }
-
+      //Mandar llamar la informacion del usuario
       const profileResponse = await axios.get(`http://${IPADDRESS}:3000/api/auth/getProfile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const { id, sector, nombre } = profileResponse.data.user;
+      const { id, sector, nombre, photo } = profileResponse.data.user;
       setUserSector(sector);
       setUserId(id);
       setUserName(nombre);
+      setFotoPerfil(photo);
 
+      //Traer las puntuaciones del usuario para las barras de progreso
       const scoresResponse = await axios.get(`http://${IPADDRESS}:3000/api/auth/getScores`, {
         params: { userId: id },
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      //Guarda las puntuaciones del usuario para su uso posterior
       const { lastScore, averageScore } = scoresResponse.data;
       setLastScore(lastScore);
       setAverageScore(averageScore);
+
+
     } catch (error: any) {
-      if (error.response) {
-        console.error('Error en la respuesta del servidor:', error.response.data);
-        Alert.alert('Error', `Error del servidor: ${error.response.data.message}`);
-      } else if (error.request) {
-        console.error('No se recibió respuesta del servidor:', error.request);
-        Alert.alert('Error', 'No se recibió respuesta del servidor.');
-      } else {
-        console.error('Error al configurar la solicitud:', error.message);
-        Alert.alert('Error', `Error al configurar la solicitud: ${error.message}`);
+      //Manejo de errores
+      if ( error.response ) {
+        Alert.alert( 'Error', `Error del servidor: ${error.response.data.message}` );
+      } else if ( error.request ) {
+        Alert.alert( 'Error', 'No se recibió respuesta del servidor.' );
+      } else {        
+        Alert.alert( 'Error', `Error al configurar la solicitud: ${error.message}` );
       }
     } finally {
-      setLoading(false);
+      setLoading( false ); 
     }
   };
 
+  //Uso de focus de la pantalla, apra que se actualice cada vez que se fije la pantalla
   useFocusEffect(
     useCallback(() => {
       fetchUserData();
 
       return () => {
-        // Lógica de limpieza si es necesaria
+        
       };
     }, [])
   );
-  
 
+  //Animacion de carga de la pantalla
   if (loading) {
     return (
       <View style={styles.container}>
@@ -127,7 +136,7 @@ export default function PlanJoberufScreen() {
             />
           </View>
         </View>
-        
+
         {/* Botones */}
         <Link href="/Curriculum" asChild>
           <TouchableOpacity style={styles.buttonCV}>

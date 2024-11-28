@@ -1,22 +1,25 @@
+//Importaciones necesarias para la pantalla Curriculum
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import axios from 'axios';
 import { OpenAI } from 'openai';
 
-import { IPADDRESS } from './config';
-console.log(`CV = ${IPADDRESS}`);
+import { IPADDRESS } from './config'; // Ip usada para pruebas
 
-
+//Declaracion de pantalla UploadCvScreen
 export default function UploadCvScreen() {
+  //Declaracion de constantes y estados necesarias para la funcionalidad de la pantalla
   const [cvFile, setCvFile] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  //Importar la openAI
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
+  //Funcion para poder escoger el documento
   const pickDocument = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: 'application/pdf',
@@ -29,6 +32,7 @@ export default function UploadCvScreen() {
     }
   };
 
+  //Funcion para analisar el CV
   const analyzeCv = async () => {
     if (!cvFile) {
       console.log("No hay archivo seleccionado para analizar");
@@ -42,13 +46,14 @@ export default function UploadCvScreen() {
         type: 'application/pdf',
         name: 'documento.pdf',
       });
-
+      //Mandar llamar la ruta de cargar CV, donde pasa de un pdf a texto plano
       const response = await axios.post(`http://${IPADDRESS}:3000/api/uploadCv`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      const cvText = response.data.text;
+      const cvText = response.data.text; //Recibe el texto plano convertido del pdf
+      //Mandar llamar la IA para el analisis
       const openaiResponse = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
@@ -59,6 +64,7 @@ export default function UploadCvScreen() {
         temperature: 0.7,
       });
 
+      //Guardar las sugerencias
       const suggestionsText = openaiResponse.choices[0].message?.content?.trim() || 'No se pudo generar sugerencias.';
       setSuggestions(suggestionsText);
     } catch (error) {
@@ -68,7 +74,7 @@ export default function UploadCvScreen() {
       setLoading(false);
     }
   };
-
+  //Diseño de la pantalla
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
@@ -114,7 +120,7 @@ export default function UploadCvScreen() {
     </ScrollView>
   );
 }
-
+//Estilos de la pantalla
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,

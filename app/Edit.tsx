@@ -47,20 +47,16 @@ export default function EditProfileScreen() {
         
         
         const user = response.data.user;
-        console.log(user);
 
         setName(user.nombre);        
         setEmail(user.correo);
         setCellphone(user.telefono);
         setSector(user.sector);
-        console.log(user.fecha);
         setBirthday(new Date(user.fecha));
-        
+        console.log (`foto2: ${user.photo}`);
         // Configura la URL completa de la imagen si existe
-        const profileImageUri = user.fotoPerfil ? `http://${IPADDRESS}:3000/${user.fotoPerfil}` : null;
+        const profileImageUri = user.photo;
         setImageUri(profileImageUri);
-
-
         setSelectedTechSkills(user.habilidadesTecnicas.map((skill: { nombre: any; }) => skill.nombre));
         setSelectedSoftSkills(user.habilidadesBlandas.map((skill: { nombre: any; }) => skill.nombre));
 
@@ -186,17 +182,19 @@ export default function EditProfileScreen() {
   const removeSoftSkill = (skill: string) => {
     setSelectedSoftSkills(selectedSoftSkills.filter((item: string) => item !== skill));
   };
-
+  
   return (
     <View style={styles.backgroundContainer}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
           <Text style={styles.title}>Editar perfil</Text>
           <TouchableOpacity onPress={pickImage} style={styles.centered}>
-            <View style={styles.avatarContainer}>
-              <Image source={imageUri ? { uri: imageUri } : require('../components/img/FotoPerfil.jpg')} style={styles.avatar} />
-            </View>
-            <Text style={styles.editText}>Editar foto</Text>
+            <View style={styles.avatarContainer}>              
+              <Image
+                source={imageUri ? { uri: imageUri } : require('../assets/images/Imago.png')}
+                style={styles.avatar}
+              />
+            </View>            
           </TouchableOpacity>
         </View>
 

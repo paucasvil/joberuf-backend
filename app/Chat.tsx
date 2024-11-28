@@ -1,10 +1,11 @@
+//Importaciones necesarias para la pantalla Chat
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { IPADDRESS } from './config';
-
+//Definir interfaz de mensaje y su formato
 type Message = {
   id: number;
   sender: string;
@@ -12,6 +13,7 @@ type Message = {
   type: 'sent' | 'received';
 };
 
+//Declarar constantes y sus estados necesarios durante la implementacion de la pantalla
 export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -19,21 +21,22 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(false);
   const [userSector, setUserSector] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string>(''); // Nombre del usuario
-  const [userPhoto, setUserPhoto] = useState<string | null>(null); // Foto del usuario
+  const [userName, setUserName] = useState<string>('');
+  const [userPhoto, setUserPhoto] = useState<string | null>(null); 
   const [interviewQuestions, setInterviewQuestions] = useState<{ topic: string; question: string }[]>([]);
   const [isInputDisabled, setIsInputDisabled] = useState(false);
-  const [isIntroVisible, setIsIntroVisible] = useState(true); // Estado para la introducción
+  const [isIntroVisible, setIsIntroVisible] = useState(true); 
   const scrollViewRef = useRef<ScrollView | null>(null);
-  const [userProfileImage, setUserProfileImage] = useState<string | null>(null); // Imagen del usuario
-  const MAX_QUESTIONS = 10;
+  const [userProfileImage, setUserProfileImage] = useState<string | null>(null); 
+  const MAX_QUESTIONS = 10; //Definir maximo de preguntas
 
   const isInputEditable = () => !loading && !isInputDisabled;
-
+  //Inicio de la simulación de entrevista
   const startSimulation = () => {
-    setIsIntroVisible(false);
+    setIsIntroVisible(false); //Iniciar con una introducción antes de la simulación
   };
 
+  //Inicio de la simulación 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -44,7 +47,7 @@ export default function ChatScreen() {
           Alert.alert('Error', 'Usuario no autenticado.');
           return;
         }
-
+        //Llamar los datos del usuario
         const response = await axios.get(`http://${IPADDRESS}:3000/api/auth/getProfile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -55,8 +58,8 @@ export default function ChatScreen() {
         setUserSector(sector);
         setUserId(id);
         setUserName(nombre);
-        setUserPhoto(photo || null); // Si no hay foto, será null
-        startInterview(sector, id);
+        setUserPhoto(photo || null); 
+        startInterview(sector, id); //Inicia la entrevista
       } catch (error: any) {
         console.error('Error al obtener los datos del usuario:', error.response?.data || error.message);
         Alert.alert('Error', 'No se pudo obtener la información del usuario.');
@@ -66,8 +69,10 @@ export default function ChatScreen() {
     fetchUserData();
   }, []);
 
+
+  //Funcion para iniciar la entrevista, con un saludo y la primera pregunta
   const startInterview = async (sector: string, id: string) => {
-    setLoading(true);
+    setLoading(true); //Animacion de carga
 
     try {
       const token = await AsyncStorage.getItem('token');
@@ -84,26 +89,29 @@ export default function ChatScreen() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      //Definir las preguntas para la simuacion de entrevista
       const questions = response.data.questions.map((q: any) =>
         typeof q === 'string' ? { question: q, topic: 'General' } : q
       );
       setInterviewQuestions(questions);
+      //Iniciar con la primera pregunta
       setMessages([
         {
           id: Date.now(),
           sender: 'Joby',
-          text: `¡Hola! Soy tu entrevistador. Comencemos. ${questions[0]?.question || questions[0]}`,
+          text: `¡Hola! Soy tu Joby, tu entrevistador. Comencemos. ${questions[0]?.question || questions[0]}`,
           type: 'received',
         },
       ]);
-    } catch (error: any) {
+    } catch (error: any) { 
       console.error('Error al iniciar la entrevista:', error.message);
-      Alert.alert('Error', 'No se pudieron cargar las preguntas.');
+      Alert.alert('Error', 'No se pudieron cargar las preguntas.'); //Alertas para errores
     } finally {
       setLoading(false);
     }
   };
 
+  //Funcion para enviar los mensajes y mantener la conversacion con la IA
   const sendMessage = async () => {
     if (!inputText.trim()) return;
 
@@ -113,7 +121,7 @@ export default function ChatScreen() {
       text: inputText,
       type: 'sent',
     };
-
+    //Guarda todos los mensajes previos
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
     setLoading(true);
@@ -125,6 +133,7 @@ export default function ChatScreen() {
         return;
       }
 
+      //Usar la ruta para la siguiente pregunta
       const response = await axios.post(
         `http://${IPADDRESS}:3000/api/auth/nextQuestion`,
         {
@@ -138,7 +147,7 @@ export default function ChatScreen() {
       );
 
       const nextQuestionObject = response.data.nextQuestion;
-
+      // Intercalar los mensajes de respuesta y de pregunta de la IA
       if (nextQuestionObject) {
         const botMessage: Message = {
           id: Date.now(),
@@ -146,7 +155,7 @@ export default function ChatScreen() {
           text: nextQuestionObject.question,
           type: 'received',
         };
-
+        //Guardar las preguntas del bot de IA
         setMessages((prev) => [...prev, botMessage]);
         setCurrentQuestionIndex((prev) => prev + 1);
       } else {
@@ -160,6 +169,7 @@ export default function ChatScreen() {
     }
   };
 
+  //Funcion para finalizar la entrevista
   const finishInterview = async () => {
     setLoading(true);
     setMessages((prev) => [
@@ -178,7 +188,7 @@ export default function ChatScreen() {
         question: interviewQuestions[index]?.question || 'Pregunta no disponible',
         answer: msg.text.trim(),
       }));
-
+      // Usa las respuestas de la entrevista para un analisis a profundidad
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
@@ -199,13 +209,13 @@ export default function ChatScreen() {
           },
         }
       );
-      console.log("hasta aqui bien");
+      //Guardar en la base de datos la puntuacion promedio de la entrevista
       const { feedback, score } = response.data;
       await axios.post(
         `http://${IPADDRESS}:3000/api/auth/scores`,
         {
           userId,
-          score, // Puntuación de la última entrevista
+          score,
         },
         {
           headers: {
@@ -213,20 +223,20 @@ export default function ChatScreen() {
           },
         }
       );
-      console.log("AQUI YA ?");
+      
       // Mostrar feedback completo
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now(),
           sender: 'Joby',
-          text: feedback,
+          text: feedback, //Muestra el feedback final
           type: 'received',
         },
         {
           id: Date.now() + 1,
           sender: 'Joby',
-          text: `Puntaje promedio final: ${score}/100.`,
+          text: `Puntaje promedio final: ${score}/100.`, //Muestra el puntaje promedio final
           type: 'received',
         },
       ]);
@@ -239,10 +249,11 @@ export default function ChatScreen() {
     }
   };
 
+  //Introducción antes de la simulacion
   if (isIntroVisible) {
     return (
       <View style={styles.introContainer}>
-        <Text style={styles.introTitle}>¡Bienvenido, {userName}!</Text>
+        <Text style={styles.introTitle}>!Hola, {userName}!</Text>
         <Text style={styles.introText}>
           A continuación, iniciaremos una simulación de entrevista de trabajo diseñada específicamente para el área de{' '}
           <Text style={{ fontWeight: 'bold' }}>{userSector}</Text>.
@@ -267,7 +278,7 @@ export default function ChatScreen() {
       </View>
     );
   }
-  
+  //Diseño de pantalla
   return (
     <View style={styles.container}>
       <ScrollView ref={scrollViewRef}
@@ -339,6 +350,7 @@ export default function ChatScreen() {
   );
 }
 
+//Estilos de la pantalla
 const styles = StyleSheet.create({
   container: {
     flex: 1,

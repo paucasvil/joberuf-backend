@@ -66,7 +66,6 @@ exports.signup = async (req, res) => {
 
 // Función para asignar la foto de perfil basada en la primera letra del nombre
 function setFoto(nombre) {
-  console.log(nombre);
   if (!nombre || nombre.length === 0) {
     return '../assets/images/imago.png'; // Imagen predeterminada si no hay nombre
   }
@@ -148,14 +147,12 @@ exports.getProfile = async (req, res) => {
       console.error('Error: Usuario no encontrado para el ID:', userId);
       return res.status(404).json({ message: 'Usuario no encontrado.' });
     }
-    console.log(user.fotoPerfil);
-    console.log(user.nombre);
     let fotoPerfil = user.fotoPerfil;
     if (!fotoPerfil) {
       // Asignar imagen basada en la primera letra del nombre
       fotoPerfil = setFoto(user.nombre);
     }
-    console.log (fotoPerfil);
+    console.log (`foto1: ${fotoPerfil}`);
     //console.log('Perfil de usuario obtenido correctamente:', user);
     res.status(200).json({
       user: {

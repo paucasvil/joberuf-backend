@@ -1,14 +1,15 @@
+//Importaciones necesarias para la pantalla Login
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { IPADDRESS } from './config';
+import { IPADDRESS } from './config'; //Importar la IP para las pruebas
 
-console.log(`LOGIN = ${IPADDRESS}`);
-
+//Definir la pantalla LoginScreen
 export default function LoginScreen() {
+  //Declarar constantes y estados 
   const logoBW = require('../components/img/LogoBW.png');
 
   const [correo, setCorreo] = useState('');
@@ -30,17 +31,15 @@ export default function LoginScreen() {
     };
     loadRememberedCredentials();
   }, []);
-
-  const handleLogin = async () => {
-    console.log('Botón de iniciar sesión presionado');
-    
+  //Función para controlar el Login
+  const handleLogin = async () => {    
     if (!correo || !contra) {
       Alert.alert('Error', 'Por favor, ingresa el correo y la contraseña.');
       return;
     }
     
     try {
-      //console.log(IPADDRESS);
+      //Manda llamar la ruta para Login con una peticion post
       const response = await fetch(`http://${IPADDRESS}:3000/api/auth/login`, {        
         method: 'POST',
         headers: {
@@ -48,12 +47,10 @@ export default function LoginScreen() {
         },
         body: JSON.stringify({ correo, contra }),
       });
-      console.log('redirecciono');
+      //Confirmar que el usuario es correcto
       const data = await response.json();
-
       if (data.token) {
         await AsyncStorage.setItem('token', data.token);
-        Alert.alert('Inicio de sesión exitoso');
         if (rememberMe) {
           await AsyncStorage.setItem('rememberMe', 'true');
           await AsyncStorage.setItem('userEmail', correo);
@@ -67,16 +64,17 @@ export default function LoginScreen() {
       } else {
         Alert.alert('Error', data.message || 'No se pudo iniciar sesión.');
       }
-    } catch (error) {
+    } catch (error) { //Manejo de errores
       console.error('Error en la solicitud de inicio de sesión:', error);
       Alert.alert('Error', 'Hubo un problema al intentar iniciar sesión. Inténtalo de nuevo.');
     }
   };
-
+  //Funcion para manejar el checkBox "Remember Me"
   const handleRememberMeToggle = () => {
     setRememberMe(!rememberMe);
   };
 
+//Diseño de la pantalla
   return (
     <View style={styles.container}>
       <Image source={logoBW} style={styles.logo} />
@@ -139,7 +137,7 @@ export default function LoginScreen() {
     </View>
   );
 }
-
+//Estilos de la pantalla
 const styles = StyleSheet.create({
   container: {
     display: 'flex',
