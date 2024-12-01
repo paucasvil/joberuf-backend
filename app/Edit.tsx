@@ -53,10 +53,10 @@ export default function EditProfileScreen() {
         setCellphone(user.telefono);
         setSector(user.sector);
         setBirthday(new Date(user.fecha));
-        console.log (`foto2: ${user.photo}`);
         // Configura la URL completa de la imagen si existe
         const profileImageUri = user.photo;
-        setImageUri(profileImageUri);
+        //setImageUri(profileImageUri);
+        setImageUri(require('../assets/images/images5/J.png')); // Imagen por defecto
         setSelectedTechSkills(user.habilidadesTecnicas.map((skill: { nombre: any; }) => skill.nombre));
         setSelectedSoftSkills(user.habilidadesBlandas.map((skill: { nombre: any; }) => skill.nombre));
 
@@ -76,7 +76,7 @@ export default function EditProfileScreen() {
           Alert.alert('Error', 'No se encontró el token de autenticación.');
           return;
        }
-
+       /*
        if (imageUri) {
         const formData = new FormData();     
         formData.append('fotoPerfil', {
@@ -96,25 +96,26 @@ export default function EditProfileScreen() {
         if (!imageUploadResponse.ok) {
            throw new Error('Error al subir la imagen. Por favor, intenta nuevamente.');
         }
-     }
+     }*/
+
      
        await axios.put(`http://${IPADDRESS}:3000/api/auth/updateProfile`, {
           nombre: name,
           correo: email,
           telefono: cellphone,
-          sector,
-          fecha: birthday,
+          //sector,
+          //fecha: birthday,
           habilidadesTecnicas: selectedTechSkills,
           habilidadesBlandas: selectedSoftSkills,
        }, {
           headers: { Authorization: `Bearer ${token}` },
        });
 
-       Alert.alert('Éxito', 'Perfil actualizado correctamente.');
+       Alert.alert('Cambios guardados', 'Tu perfil se ha actualizado con exito');
        router.push('/Profile');
     } catch (error:any) {
        console.error("Error al actualizar el perfil:", error.message);
-       Alert.alert('Error', error.message || 'Ocurrió un error al guardar los cambios.');
+       Alert.alert('Error', error.message || 'Ocurrió un error al guardar tus cambios.');
     }
  };
 
@@ -190,10 +191,7 @@ export default function EditProfileScreen() {
           <Text style={styles.title}>Editar perfil</Text>
           <TouchableOpacity onPress={pickImage} style={styles.centered}>
             <View style={styles.avatarContainer}>              
-              <Image
-                source={imageUri ? { uri: imageUri } : require('../assets/images/Imago.png')}
-                style={styles.avatar}
-              />
+            <Image source={imageUri || require('../assets/images/Imago.png')} style={styles.avatar} />
             </View>            
           </TouchableOpacity>
         </View>
@@ -269,15 +267,6 @@ export default function EditProfileScreen() {
             </View>
           ))}
         </View>
-
-        {/* Fecha de cumpleaños */}
-        <View style={styles.inputWrapper}>
-          <MaterialIcons name='calendar-today' size={24} color='#7c7c7c' style={styles.icon} />
-          <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateTextWrapper}>
-            <Text style={styles.dateText}>{birthday.toLocaleDateString()}</Text>
-          </TouchableOpacity>
-        </View>
-        {showDatePicker && <DateTimePicker value={birthday} mode="date" display="default" onChange={onDateChange} />}
 
         {/* Botón de guardar cambios */}
         <View style={styles.buttonContainer}>

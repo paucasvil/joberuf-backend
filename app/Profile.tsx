@@ -1,3 +1,4 @@
+//Importaciones necesarias para el funcionamiento de la pantalla Profile
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
 import * as Font from 'expo-font';
@@ -7,17 +8,20 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-import { IPADDRESS } from './config';
-import suggestionsData from '../back/data/suggestions.json'; // Importar JSON
+import { IPADDRESS } from './config'; //Dirección IP para pruebas
+import suggestionsData from '../back/data/suggestions.json'; // Importar JSON de sugerencias
 
 export default function UserProfileScreen() {
+  //Declaraciones necesarias y sus estados
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
   const [nombre, setNombre] = useState('Nombre');
   const [correo, setCorreo] = useState('Correo');
   const [telefono, setTelefono] = useState('Telefono');
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
+  
   useEffect(() => {
+    //Mandar traer la info del usuario
     const fetchUserProfile = async () => {
       const token = await AsyncStorage.getItem('token');
       try {
@@ -30,7 +34,10 @@ export default function UserProfileScreen() {
         setNombre(user.nombre);
         setCorreo(user.correo);
         setTelefono(user.telefono);
-        //setFotoPerfil(`http://${IPADDRESS}:3000/${user.fotoPerfil}`);        
+
+        // Usar una imagen por defecto para pruebas
+        setFotoPerfil(require('../assets/images/images5/J.png')); 
+
       } catch (error) {
         console.error("Error al obtener el perfil del usuario:", error);
       }
@@ -46,36 +53,38 @@ export default function UserProfileScreen() {
     randomSuggestions();
   }, []);
 
+  //Diseño de la pantalla
   return (
-    <View style = {styles.backgroundContainer}>
-      <ScrollView contentContainerStyle = {styles.scrollContainer}>
-        <StatusBar style = 'dark' />
-        
+    <View style={styles.backgroundContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <StatusBar style='dark' />
+
         {/* Encabezado con imagen, nombre y correo */}
-        <View style = {styles.header}>
-          <Image source={{ uri: fotoPerfil || 'default_profile_image_url' }} style={styles.profileImage} />
+        <View style={styles.header}>
+          {/* Usar fotoPerfil o imagen por defecto */}
+          <Image source={fotoPerfil || require('../assets/images/Imago.png')} style={styles.profileImage} />
           <Text style={styles.name}>{nombre}</Text>
           <Text style={styles.email}>{correo}</Text>
           <Text style={styles.phone}>{telefono}</Text>
         </View>
-  
+
         {/* Botón de Editar perfil */}
-        <Link href = '/Edit' asChild>
-          <TouchableOpacity style = {styles.buttonEdit}>
-            <Text style = {styles.buttonText}>Editar perfil</Text>
+        <Link href='/Edit' asChild>
+          <TouchableOpacity style={styles.buttonEdit}>
+            <Text style={styles.buttonText}>Editar perfil</Text>
           </TouchableOpacity>
         </Link>
 
         {/* Botón de Cambiar contraseña */}
-        <Link href = '/ChangePassword' asChild>
-          <TouchableOpacity style = {styles.buttonEdit}>
-            <Text style = {styles.buttonText}>Cambiar contraseña</Text>
+        <Link href='/ChangePassword' asChild>
+          <TouchableOpacity style={styles.buttonEdit}>
+            <Text style={styles.buttonText}>Cambiar contraseña</Text>
           </TouchableOpacity>
         </Link>
-  
+
         {/* Sección de sugerencias */}
-        <Text style = {styles.suggestionsTitle}>Sugerencias para mejorar tu Curriculum</Text>
-        
+        <Text style={styles.suggestionsTitle}>Sugerencias para mejorar tu Curriculum</Text>
+
         {suggestions.map((suggestion, index) => (
           <View key={index} style={styles.suggestionBox}>
             <Text style={styles.suggestionText}>{suggestion}</Text>
@@ -85,12 +94,12 @@ export default function UserProfileScreen() {
     </View>
   );
 }
+//Estilos de la pantalla
 
 const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
     backgroundColor: '#ffffff',
-    // marginTop: Constants.statusBarHeight,
   },
   scrollContainer: {
     width: '100%',

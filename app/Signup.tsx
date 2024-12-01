@@ -1,3 +1,4 @@
+//Importaciones necesarias para el correcto funcionamiento de la pantalla SignUp
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, Alert } from 'react-native';
 import { useRouter, Link } from 'expo-router';
@@ -6,8 +7,7 @@ import DataTimePicker from '@react-native-community/datetimepicker';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Network from 'expo-network';
 import axios from 'axios';
-import { IPADDRESS } from './config';
-console.log(`SIGNUP = ${IPADDRESS}`);
+import { IPADDRESS } from './config'; //IP para pruebas
 export default function SignUpScreen() {
   const logo = require('../components/img/Logo.png');
   const router = useRouter();
@@ -65,7 +65,7 @@ export default function SignUpScreen() {
       Alert.alert('Error', err.response?.data?.message || 'Ocurrió un error al registrarse');
     }
   };
-
+//Diseño de la pantalla
   return (
     <View style={styles.backgroundContainer}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -193,7 +193,7 @@ export default function SignUpScreen() {
     </View>
   );
 }
-
+//Estilos de la pantalla
 const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,

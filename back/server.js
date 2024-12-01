@@ -6,13 +6,9 @@ const path = require('path');
 const cors = require('cors');
 const multer = require('multer');
 const { authMiddleware } = require('./middlewares/authMiddleware');
-const pdfParse = require('pdf-parse'); // Importar pdf-parse para analizar archivos PDF
+const pdfParse = require('pdf-parse'); // Importación pdf-parse para analizar archivos PDF
 const authController = require('./controllers/authController');
-//const chatRoutes = require('./routes/ChatRoutes');
 const bodyParser = require('body-parser');
-
-//global.IPADDRESS = '10.19.50.133'; //IP VARIABLE GLOBAL
-
 
 dotenv.config(); // Cargar variables de entorno desde el archivo .env
 // Conectar a la base de datos
@@ -22,23 +18,14 @@ connectToDatabase();
 const app = express();
 app.use(bodyParser.json());
 app.use(express.json());
-
-//app.use('/api/chat', chatRoutes);
-
-/*
-app.use('/api/chat', (req, res, next) => {
-  console.log('Solicitud a /api/chat:', req.method, req.body);
-  next();
-}, chatRoutes);
-*/
-
+//Imagenes de foto de perfil
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `${file.fieldname}-${uniqueSuffix}.jpg`); // Aseguramos la extensión .jpg
+    cb(null, `${file.fieldname}-${uniqueSuffix}.jpg`); 
   }
 });
 

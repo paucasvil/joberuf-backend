@@ -22,8 +22,6 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch((err) => {
     console.error('Error al conectar a MongoDB:', err);
   });
-// Usar las rutas de chat
-app.use('/api/chat', chatRoutes);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);

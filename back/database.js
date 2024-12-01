@@ -1,7 +1,7 @@
 // back/database.js
 const mongoose = require('mongoose');
 require('dotenv').config();
-
+//Conectar con la base de datos
 async function connectToDatabase() {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {

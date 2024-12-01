@@ -1,3 +1,4 @@
+//Declaracion de importaciones necesarias
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/users'); 
@@ -8,12 +9,12 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const OpenAI = require('openai');
-
+//Uso de OpenAI
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const questionsData = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../data/questions.json'), 'utf-8'));
 
 
-
+//Funcion para manejar el almacenamiento 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -50,7 +51,7 @@ exports.signup = async (req, res) => {
       telefono,
       correo,
       sector,
-      fecha: new Date(fecha), // Agrega la fecha de nacimiento
+      fecha: new Date(fecha),
       fechaRegistro: new Date(),
       perfilCompleto: false,
       fotoPerfil : setFoto(nombre),
@@ -67,7 +68,7 @@ exports.signup = async (req, res) => {
 // Función para asignar la foto de perfil basada en la primera letra del nombre
 function setFoto(nombre) {
   if (!nombre || nombre.length === 0) {
-    return '../assets/images/imago.png'; // Imagen predeterminada si no hay nombre
+    return '../assets/images/imago.png'; // Imagen predeterminada 
   }
 
   // Obtener la primera letra del nombre y convertirla a mayúscula
@@ -82,33 +83,25 @@ function setFoto(nombre) {
 
   // Verificar si el archivo existe
   if (fs.existsSync(path.resolve(__dirname, `../${rutaImagen}`))) {
-    return rutaImagen; // Retorna la ruta de la imagen si existe
+    return rutaImagen; 
   } else {
-    return 'assets/images/imago.png'; // Imagen predeterminada si no se encuentra
+    return 'assets/images/imago.png'; // Imagen predeterminada
   }
 }
 
 // Controlador para el inicio de sesión de usuarios
 exports.login = async (req, res) => {
-  //console.log('Cuerpo recibido:', req.body);
-
   try {
     const { correo, contra } = req.body;
-    //console.log('Buscando usuario con correo:', correo)c
 
     const user = await User.findOne({ correo });
     if (!user) {
-      //console.log('Usuario no encontrado.');
       return res.status(400).json({ message: 'Correo o contraseña incorrectos.' });
     }
 
-    //console.log('Usuario encontrado:', user);
-
     const isMatch = await bcrypt.compare(contra, user.contra);
-    //console.log('¿Contraseña coincide?:', isMatch);
 
     if (!isMatch) {
-      //console.log('Contraseña incorrecta.');
       return res.status(400).json({ message: 'Correo o contraseña incorrectos.' });
     }
 
@@ -116,23 +109,17 @@ exports.login = async (req, res) => {
       expiresIn: '1h',
     });
 
-    //console.log('Token generado:', token);
-
     res.status(200).json({ message: 'Inicio de sesión exitoso.', token });
   } catch (error) {
-    //console.error('Error en el proceso de inicio de sesión:', error);
     res.status(500).json({ message: 'Error al iniciar sesión.' });
   }
 };
 
 
 // Controlador para actualizar datos de perfil en Edit.tsx
-
-
 exports.getProfile = async (req, res) => {
   try {
-    const userId = req.user?.id; // Obtener el ID desde `req.user`
-    //console.log('ID del usuario desde req.user:', req.user?.id);
+    const userId = req.user?.id; 
 
     if (!userId) {
       console.error('Error: No se proporcionó userId en la solicitud.');
@@ -153,7 +140,6 @@ exports.getProfile = async (req, res) => {
       fotoPerfil = setFoto(user.nombre);
     }
     console.log (`foto1: ${fotoPerfil}`);
-    //console.log('Perfil de usuario obtenido correctamente:', user);
     res.status(200).json({
       user: {
         id: user._id,
@@ -175,7 +161,7 @@ exports.getProfile = async (req, res) => {
 
 
 
-
+//Determinar si existe o no las habilidades en la base de datos
 async function findOrCreateHabilidades(habilidades, categoria) {
   const habilidadesIds = [];
   for (const nombre of habilidades) {
@@ -188,6 +174,7 @@ async function findOrCreateHabilidades(habilidades, categoria) {
   return habilidadesIds;
 }
 
+//Controlador para actualizar los datos del usuario en la base de datos
 exports.updateProfile = async (req, res) => {
   try {
     const { nombre, apellidos, correo, telefono, sector, fecha, habilidadesTecnicas, habilidadesBlandas } = req.body;
@@ -241,7 +228,6 @@ exports.changePassword = async (req, res) => {
   }
 };
 // Controlador para subir la foto de perfil
-// authController.js
 exports.uploadProfilePhoto = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -261,12 +247,10 @@ exports.uploadProfilePhoto = async (req, res) => {
   }
 };
 
-// En authController.js (o el archivo donde manejes la autenticación)
-
 exports.changePassword = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
-    const userId = req.user.id; // El ID del usuario debería venir del token de autenticación
+    const userId = req.user.id;
 
     // Busca el usuario en la base de datos
     const user = await User.findById(userId);
@@ -336,6 +320,7 @@ exports.forgotPassword = async (req, res) => {
 };
 
 
+//Función para llamar aleatoreamente preguntas del json
 function getRandomQuestions(sector) {
   console.log("Sector recibido en getRandomQuestions:", sector);
 
@@ -344,7 +329,7 @@ function getRandomQuestions(sector) {
       console.error("Error: Sector no encontrado en el archivo JSON:", sector);
       return [];
   }
-
+  //Separar en 2 arreglos los tipos de preguntas
   const generalQuestions = sectorData.General || [];
   const otherTopics = Object.entries(sectorData).filter(([topic]) => topic !== "General");
 
@@ -373,25 +358,32 @@ function getRandomQuestions(sector) {
 
 
 
+// Controlador para manejar la simulación de entrevistas y puntuaciones de usuarios
 
+// Objeto para mantener sesiones activas en memoria
 let activeSessions = {};
+
+//Inicia una nueva simulación de entrevista para un usuario.
 exports.startInterview = (req, res) => {
   console.log("Solicitud recibida en startInterview:", req.body);
 
   const { userSector, userId } = req.body;
 
+  // Validar datos obligatorios
   if (!userSector || !userId) {
     console.error("Error: Datos incompletos en la solicitud:", req.body);
     return res.status(400).json({ message: "Datos incompletos en la solicitud." });
   }
 
   try {
-    const questions = getRandomQuestions(userSector); // Esta función genera las preguntas
+    // Obtener preguntas aleatorias para el sector proporcionado
+    const questions = getRandomQuestions(userSector);
     if (!questions || questions.length === 0) {
       console.error("Error: No se encontraron preguntas para el sector:", userSector);
       return res.status(404).json({ message: "No se encontraron preguntas para el sector." });
     }
 
+    // Crear una nueva sesión activa para el usuario
     activeSessions[userId] = { questions, responses: [] };
 
     console.log(`Sesión iniciada para el usuario ${userId} en el sector ${userSector}`);
@@ -402,9 +394,11 @@ exports.startInterview = (req, res) => {
   }
 };
 
+// Procesa la respuesta del usuario a la pregunta actual y devuelve la siguiente pregunta.
 exports.nextQuestion = (req, res) => {
   const { userId, userResponse, currentQuestionIndex } = req.body;
 
+  // Validar datos obligatorios
   if (!userId || !userResponse || currentQuestionIndex === undefined) {
     return res.status(400).json({ message: 'Datos incompletos en la solicitud.' });
   }
@@ -414,86 +408,93 @@ exports.nextQuestion = (req, res) => {
     return res.status(404).json({ message: 'Sesión no encontrada para el usuario.' });
   }
 
+  // Guardar la respuesta del usuario
   session.responses.push({
     question: session.questions[currentQuestionIndex],
     answer: userResponse,
   });
 
+  // Obtener la siguiente pregunta
   const nextQuestion = session.questions[currentQuestionIndex + 1];
   if (!nextQuestion) {
-    return res.status(200).json({ nextQuestion: null });
+    return res.status(200).json({ nextQuestion: null }); // No hay más preguntas
   }
 
   res.status(200).json({ nextQuestion });
 };
+
+//Finaliza la entrevista y genera retroalimentación y puntuación utilizando OpenAI.
+
 exports.finishInterview = async (req, res) => {
   const { userId } = req.body;
+
+  // Validar datos obligatorios
   if (!userId) {
-      return res.status(400).json({ message: 'Datos incompletos en la solicitud.' });
+    return res.status(400).json({ message: 'Datos incompletos en la solicitud.' });
   }
 
   const session = activeSessions[userId];
   if (!session) {
-      return res.status(404).json({ message: 'Sesión no encontrada para el usuario.' });
+    return res.status(404).json({ message: 'Sesión no encontrada para el usuario.' });
   }
 
   try {
-      // Crear mensajes para OpenAI con todas las preguntas y respuestas
-      const messages = session.responses.map(({ question, answer }, index) => ({
-          role: 'user',
-          content: `Pregunta ${index + 1}: ${question.question}\nRespuesta: ${answer}`,
-      }));
+    // Crear mensajes para OpenAI con preguntas y respuestas
+    const messages = session.responses.map(({ question, answer }, index) => ({
+      role: 'user',
+      content: `Pregunta ${index + 1}: ${question.question}\nRespuesta: ${answer}`,
+    }));
 
-      // Enviar todas las preguntas y respuestas en una sola solicitud a OpenAI
-      const response = await openai.chat.completions.create({
-          model: 'gpt-3.5-turbo',
-          messages: [
-              {
-                  role: 'system',
-                  content: 'Eres un entrevistador profesional. Proporciona retroalimentación detallada para cada respuesta y asigna una puntuación individual de 0 a 10. Al final, calcula un promedio general y devuélvelo junto con el feedback. El formato debe ser claro y legible.',
-              },
-              ...messages,
-          ],
-          max_tokens: 2000,
-          temperature: 0.7,
-      });
+    // Enviar a OpenAI para obtener retroalimentación
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'Eres un entrevistador profesional. Proporciona retroalimentación detallada y puntuaciones.',
+        },
+        ...messages,
+      ],
+      max_tokens: 2000,
+      temperature: 0.7,
+    });
 
-      const feedback = response.choices[0].message?.content?.trim() || 'Sin feedback.';
-      const individualScores = [];
-      let totalScore = 0;
+    // Procesar la respuesta de OpenAI
+    const feedback = response.choices[0].message?.content?.trim() || 'Sin feedback.';
+    const individualScores = [];
+    let totalScore = 0;
 
-      // Procesar el feedback para extraer puntuaciones individuales
-      const feedbackLines = feedback.split('\n');
-      feedbackLines.forEach((line) => {
-          const match = line.match(/Puntuación:\s*(\d+)/i);
-          if (match) {
-              const score = parseInt(match[1], 10);
-              individualScores.push(score);
-              totalScore += score;
-          }
-      });
+    // Extraer puntuaciones del feedback
+    const feedbackLines = feedback.split('\n');
+    feedbackLines.forEach((line) => {
+      const match = line.match(/Puntuación:\s*(\d+)/i);
+      if (match) {
+        const score = parseInt(match[1], 10);
+        individualScores.push(score);
+        totalScore += score;
+      }
+    });
 
-      // Asegúrate de que no se divida por cero
-      const finalScore = individualScores.length > 0 ? Math.round(totalScore / individualScores.length) : 0;
+    const finalScore = individualScores.length > 0 ? Math.round(totalScore / individualScores.length) : 0;
 
-      // Eliminar sesión activa
-      delete activeSessions[userId];
+    // Eliminar sesión activa
+    delete activeSessions[userId];
 
-      res.status(200).json({
-          feedback, // Retroalimentación completa
-          score: finalScore, //Puntaje promedio final
-          individualScores, //Puntuaciones individuales
-      });
+    res.status(200).json({
+      feedback,
+      score: finalScore,
+      individualScores,
+    });
   } catch (error) {
-      console.error('Error al finalizar la entrevista:', error);
-      res.status(500).json({ message: 'Error al finalizar la entrevista.' });
+    console.error('Error al finalizar la entrevista:', error);
+    res.status(500).json({ message: 'Error al finalizar la entrevista.' });
   }
 };
 
-
-// Guardar puntuación de entrevista
+//Guarda la puntuación de la entrevista en la base de datos del usuario.
 exports.saveScore = async (req, res) => {
   const { userId, score } = req.body;
+
   if (!userId || score == null) {
     return res.status(400).json({ message: 'Datos incompletos.' });
   }
@@ -504,8 +505,9 @@ exports.saveScore = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado.' });
     }
 
-    user.scores.push(score); // Agrega la nueva puntuación
-    if (user.scores.length > 3) user.scores.shift(); // Mantén solo las últimas 3 puntuaciones
+    // Guardar puntuación y mantener las últimas 3
+    user.scores.push(score);
+    if (user.scores.length > 3) user.scores.shift();
     await user.save();
 
     const averageScore = user.scores.reduce((a, b) => a + b, 0) / user.scores.length;
@@ -520,29 +522,33 @@ exports.saveScore = async (req, res) => {
     res.status(500).json({ message: 'Error al guardar la puntuación.' });
   }
 };
+
+//Recupera las puntuaciones del usuario desde la base de datos.
 exports.getScores = async (req, res) => {
-  const { userId } = req.query
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'Falta el userId en la solicitud.' });
+  }
+
   try {
-    if (!userId) {
-      return res.status(400).json({ message: 'Falta el userId en la solicitud.' });
-    }
-    // Retrieve the user's scores directly from the User collection
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado.' });
     }
-    const scores = user.scores; // Access the scores array
-    console.log(scores);
+
+    const scores = user.scores;
+
     if (scores.length === 0) {
-      // If no scores, return initial progress as 0
       return res.status(200).json({
         lastScore: 0,
         averageScore: 0,
       });
     }
 
-    const lastScore = scores[scores.length - 1]; // Last score
-    const averageScore = scores.reduce((acc, item) => acc + item, 0) / scores.length; // Average
+    const lastScore = scores[scores.length - 1];
+    const averageScore = scores.reduce((acc, item) => acc + item, 0) / scores.length;
+
     res.status(200).json({
       lastScore,
       averageScore,
@@ -552,4 +558,3 @@ exports.getScores = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener los puntajes.' });
   }
 };
-

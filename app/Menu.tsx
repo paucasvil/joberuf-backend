@@ -42,8 +42,8 @@ export default function PlanJoberufScreen() {
       setUserSector(sector);
       setUserId(id);
       setUserName(nombre);
-      setFotoPerfil(photo);
-
+      //setFotoPerfil(photo);
+      setFotoPerfil(require('../assets/images/images5/J.png')); // Imagen por defecto
       //Traer las puntuaciones del usuario para las barras de progreso
       const scoresResponse = await axios.get(`http://${IPADDRESS}:3000/api/auth/getScores`, {
         params: { userId: id },
@@ -70,7 +70,7 @@ export default function PlanJoberufScreen() {
     }
   };
 
-  //Uso de focus de la pantalla, apra que se actualice cada vez que se fije la pantalla
+  //Uso de focus de la pantalla, para que se actualice cada vez que se fije la pantalla
   useFocusEffect(
     useCallback(() => {
       fetchUserData();
@@ -155,7 +155,7 @@ export default function PlanJoberufScreen() {
     </View>
   );
 }
-
+//Diseño de la pantalla
 const styles = StyleSheet.create({
   container: {
     flex: 1,
